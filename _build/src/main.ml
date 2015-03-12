@@ -33,12 +33,13 @@ let parse_file file_name =
 
 let compile filenames =
   let apply phase ast msg =
-    print_string "*** ";
-    print_endline msg;
-    let ast = phase ast in 
-    flush stdout;
-    ast
-  in
+    begin
+      print_string "*** ";
+      print_endline msg;
+      let ast = phase ast in 
+      flush stdout;
+      ast
+    end in
   let () = print_endline "Applying phases:" in
   let prog = apply (List.map parse_file) filenames "parsing" in 
   let tenv = apply Env.env_program prog "environment building " in

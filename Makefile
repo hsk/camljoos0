@@ -29,6 +29,30 @@ joos0: joos0.byte
 # Default target for Eclipse
 all: joos0
 
+
+test:
+	./joos0 tests/*.java
+	cd tests ; jasc *.j
+#ok	cd tests ; java A
+	cd tests ; java B
+#ok	cd tests ; java Binop
+	cd tests ; java C
+#	cd tests ; java Cons
+	cd tests ; java ConsMain
+	cd tests ; java D
+	cd tests ; java FacIter
+	cd tests ; java FacRec
+#ok	cd tests ; java Field3
+	cd tests ; java Field4
+	cd tests ; echo 1 | java IntegerToString 
+	cd tests ; java Main2
+#ok	cd tests ; java New
+#ok	cd tests ; java New2
+	cd tests ; java New3
+#ok	cd tests ; java While
+	cd tests ; java Xor
+
+
 # Non-source directories (comma separated, no spaces)
 # Add directories that do not contain ml source files.
 # Fx directories with test cases (will speed up compilation)
@@ -38,14 +62,14 @@ EXCL_DIRS := doc
 # (ie, with source code in src/<module>.ml)
 MODS := error ast types \
         parser lexer \
-        environment \
+        env \
         linkingast linking \
         typecheckingast typechecking \
         constants \
         resourceast resource \
-        codegenerationast codegeneration \
+        codegenerationast codegen \
         limitsast limits \
-        codeemission \
+        emit \
         main
 
 #        codegenerationast codegeneration
@@ -108,7 +132,7 @@ clean:
 	rm -f $(SRC_DIR)/main.mltop
 	rm -f .ocamlinit
 	rm -f parser.automaton
-
+	rm -f tests/*.class
 ## Some specially generated files
 .ocamlinit:
 	@echo "#directory \"$(BLD_DIR)/$(SRC_DIR)\";;" > .ocamlinit

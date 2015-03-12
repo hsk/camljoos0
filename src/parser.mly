@@ -1,4 +1,3 @@
-/* File parser.mly */
 %{
 (** Helper function to parse an [int32] from a string.
 
@@ -15,54 +14,55 @@
 
 
   let make_identifier pos i = { Ast.identifier_pos = pos;
- 			        Ast.identifier     = i }
+                                Ast.identifier     = i }
 
   let make_lvalue pos l = { Ast.lvalue_pos = pos;
- 			    Ast.lvalue     = l }
+                            Ast.lvalue     = l }
 
   let make_typeexp pos t = { Ast.typeexp_pos = pos;
-		  	     Ast.typeexp     = t }
+                             Ast.typeexp     = t }
 
   let make_stm pos s = { Ast.stm_pos = pos;
-		         Ast.stm     = s }
+                         Ast.stm     = s }
 
   let make_retstm pos rs = { Ast.return_stm_pos = pos;
-		 	     Ast.return_stm     = rs }
+                             Ast.return_stm     = rs }
 
   let make_exp pos e = { Ast.exp_pos = pos;
-		         Ast.exp     = e }
+                         Ast.exp     = e }
 
   let make_field (texp,name,init) =
     { Ast.field_type = texp;
       Ast.field_name = name;
       Ast.field_init = init }
 
-  let make_formals_and_body (formals,locals,stms,return) =
+  let make_body (formals,locals,stms,return) =
     { Ast.formals = formals;
       Ast.locals = locals;
       Ast.statements = stms;
       Ast.return = return }
 
-  let make_method (texp,name,formals_and_body) =
+  let make_method (texp,name,body) =
     { Ast.method_return_type = texp;
       Ast.method_name = name;
-      Ast.method_formals_and_body = formals_and_body }
+      Ast.method_body = body }
 
-  let make_constructor (id,formals_and_body) =
+  let make_constructor (id,body) =
     { Ast.constructor_name = id;
-      Ast.constructor_formals_and_body = formals_and_body }
+      Ast.constructor_body = body }
 
   let make_class (name,fields,constructor,main,methods) =
-    { Ast.class_name = name;
+    fun source_file ->
+    { 
+      Ast.source_file = source_file;
+      Ast.class_name = name;
       Ast.class_fields = fields;
       Ast.class_constructor = constructor;
       Ast.class_main = main;
       Ast.class_methods = methods }
 
   let make_source_file p decl =
-    let file_name = p.Lexing.pos_fname in
-    { Ast.source_file_name = file_name;
-      Ast.source_file_decl = decl }
+    decl p.Lexing.pos_fname
 
 %}
 %token EOF
@@ -155,7 +155,7 @@
 %token <string>IDENTIFIER
 
 
-%start <Ast.source_file> goal          /* the entry point */
+%start <Ast.class_decl> goal          /* the entry point */
 %%
 
 /*******************************************************************
@@ -185,8 +185,8 @@ class_body
      { let new_exp = make_exp $startpos (Ast.New ($12,[])) in (*FIXME: pos?*)
        let new_stm = make_stm $startpos (Ast.Exp new_exp) in (*FIXME: pos?*)
        let new_retstm = make_retstm $startpos Ast.VoidReturn in(*FIXME: pos?*)
-       let formals_and_body = make_formals_and_body ([],[],[new_stm],new_retstm) in
-       ($2,$3,Some formals_and_body,$17) }
+       let body = make_body ([],[],[new_stm],new_retstm) in
+       ($2,$3,Some body,$17) }
   |  L_BRACE
      field_declaration*
      constructor_declaration /* no main decl */
@@ -217,8 +217,8 @@ method_declaration
   :  PUBLIC typeexp_or_void IDENTIFIER method_params throws_clause method_body
      { let id = make_identifier $startpos $3 in 
        let (lvars,stms,retstm) = $6 in
-       let formals_and_body = make_formals_and_body ($4,lvars,stms,retstm) in
-       make_method ($2,id,formals_and_body) };
+       let body = make_body ($4,lvars,stms,retstm) in
+       make_method ($2,id,body) };
 
 method_params
   :  L_PAREN formal_parameter_list R_PAREN
@@ -256,8 +256,8 @@ constructor_declaration
      { let (id,formals) = $2 in 
        let (lvars,stms) = $4 in
        let retstm       = make_retstm $startpos Ast.VoidReturn in
-       let formals_and_body = make_formals_and_body (formals,lvars,stms,retstm) in
-       make_constructor (id,formals_and_body) };
+       let body = make_body (formals,lvars,stms,retstm) in
+       make_constructor (id,body) };
 
 constructor_declarator 
   :  IDENTIFIER L_PAREN formal_parameter_list R_PAREN
@@ -385,16 +385,16 @@ value_return_statement
 literal 
   :  INTEGER_LITERAL
       { try
-	  let i = string_to_int32 $1 in
-	  make_exp $startpos (Ast.IntConst i)
-	with Failure msg -> 
-	  Error.error $startpos ("Integer value out of range: " ^ msg) }
+          let i = string_to_int32 $1 in
+          make_exp $startpos (Ast.IntConst i)
+        with Failure msg -> 
+          Error.error $startpos ("Integer value out of range: " ^ msg) }
   |  MINUS INTEGER_LITERAL
       { try
-	  let i = string_to_int32 ("-" ^ $2) in
-	  make_exp $startpos (Ast.IntConst i)
-	with Failure msg -> 
-	  Error.error $startpos ("Integer value out of range: " ^ msg) }
+          let i = string_to_int32 ("-" ^ $2) in
+          make_exp $startpos (Ast.IntConst i)
+        with Failure msg -> 
+          Error.error $startpos ("Integer value out of range: " ^ msg) }
   |  boolean_literal
      { make_exp $startpos (Ast.BooleanConst $1) }
   |  STRING_LITERAL
@@ -405,10 +405,10 @@ literal
 literal_not_integer
   :  MINUS INTEGER_LITERAL
       { try
-	  let i = string_to_int32 ("-" ^ $2) in
-	  make_exp $startpos (Ast.IntConst i)
-	with Failure msg -> 
-	  Error.error $startpos ("Integer value out of range: " ^ msg) }
+          let i = string_to_int32 ("-" ^ $2) in
+          make_exp $startpos (Ast.IntConst i)
+        with Failure msg -> 
+          Error.error $startpos ("Integer value out of range: " ^ msg) }
   |  boolean_literal
      { make_exp $startpos (Ast.BooleanConst $1) }
   |  STRING_LITERAL
@@ -540,7 +540,7 @@ additive_expression
   :  multiplicative_expression
      { $1 }
   |  additive_expression PLUS multiplicative_expression
-     { make_exp $startpos (Ast.Binop($1,Ast.Plus,$3)) }
+     { make_exp $startpos (Ast.Binop($1,Ast.Add,$3)) }
   |  additive_expression PLUS L_PAREN CHAR R_PAREN unary_expression
      { let unexp = make_exp $startpos (Ast.Unop(Ast.CharToString,$6)) in
        make_exp $startpos (Ast.Binop($1,Ast.Concat,unexp)) }
