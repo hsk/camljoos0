@@ -21,9 +21,7 @@ type method_type =
       method_name     : identifier;
       method_formals  : typeexp list; }
 
-type constructor_type =
-    { constructor_name    : identifier;
-      constructor_formals : typeexp list; }
+type constructor_type = identifier * typeexp list
 
 type class_type =
     { class_name        : identifier;

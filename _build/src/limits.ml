@@ -1,9 +1,43 @@
 (** Compiler phase to calculate the maximum number of locals and temporary stack
     locations needed for each method. *)
 
-module CAst = Codegenast
-module LAst = Limitsast
-module Inst = Instruction
+type identifier = Ast.identifier
+
+
+type typeexp = Types.typeexp
+
+
+type formal_param = typeexp * identifier * int (*NEW*)
+(*type local_decl   = typeexp * identifier (* * exp option*) * int (*NEW*)*)
+
+type field_decl = typeexp * identifier * (*field_init      : exp option;*) string
+
+type body =
+    { formals      : formal_param list;
+      (*locals     : local_decl list;*)
+      body         : Inst.instruction list;
+      max_stack    : int; (*NEW*)
+      max_locals   : int  (*NEW*) }
+
+type constructor_decl = identifier * body * string
+
+type method_decl =
+    { method_return_type : typeexp;
+      method_name        : identifier;
+      method_body        : body;
+      method_signature   : string (*NEW*) }
+
+
+type class_decl =
+    { source_file_name     : string;
+      class_name           : identifier;
+      class_fields         : field_decl list;
+      class_constructor    : constructor_decl;
+      class_main           : body option;
+      class_methods        : method_decl list;
+      class_decl_signature : string (*NEW*) }
+
+type program = class_decl list
 
 module LabelMap = Map.Make(String)
 
@@ -15,9 +49,7 @@ let verify_error message =
 type stackinfo = { maxstack : int; stackmap : int LabelMap.t }
 
 
-let limit_body fab =
-  let formals = fab.CAst.formals in
-  let body    = fab.CAst.body in
+let limit_body {Codegen.formals;body} =
 
   (* find maximum local by iterating over the instructions of the body *)
   let mymax = 
@@ -99,41 +131,36 @@ let limit_body fab =
 
   let stackinfo = traverse body 0 { maxstack = 0; stackmap = LabelMap.empty } in
 
-  { LAst.formals      = formals;
-    LAst.body         = body;
-    LAst.max_stack    = stackinfo.maxstack;
-    LAst.max_locals   = mymax  }
+  { formals      = formals;
+    body         = body;
+    max_stack    = stackinfo.maxstack;
+    max_locals   = mymax  }
 
 
-let limit_field fdecl =
-    { LAst.field_type      = fdecl.CAst.field_type;
-      LAst.field_name      = fdecl.CAst.field_name;
-      LAst.field_signature = fdecl.CAst.field_signature }
+let limit_field (ty, name, signature) =
+    (ty, name, signature)
 
 
-let limit_method mdecl =
-  { LAst.method_return_type = mdecl.CAst.method_return_type;
-    LAst.method_name        = mdecl.CAst.method_name;
-    LAst.method_body        = limit_body mdecl.CAst.method_body;
-    LAst.method_signature   = mdecl.CAst.method_signature }
+let limit_method {Codegen.method_return_type;method_name;method_body;method_signature} =
+  { method_return_type = method_return_type;
+    method_name        = method_name;
+    method_body        = limit_body method_body;
+    method_signature   = method_signature }
 
 
-let limit_constructor cdecl =
-  { LAst.constructor_name      = cdecl.CAst.constructor_name;
-    LAst.constructor_body      = limit_body cdecl.CAst.constructor_body;
-    LAst.constructor_signature = cdecl.CAst.constructor_signature }
+let limit_constructor (name, body, signature) =
+  (name, limit_body body, signature)
 
 
 let limit_program prog =
-  List.map (fun cdecl ->
-    let methods = List.map limit_method cdecl.CAst.class_methods in
-    let fields  = List.map limit_field cdecl.CAst.class_fields in
-    { LAst.source_file_name     = cdecl.CAst.source_file_name;
-      LAst.class_name           = cdecl.CAst.class_name;
-      LAst.class_fields         = fields;
-      LAst.class_constructor    = limit_constructor cdecl.CAst.class_constructor;
-      LAst.class_main           = Utils.opt limit_body cdecl.CAst.class_main;
-      LAst.class_methods        = methods;
-      LAst.class_decl_signature = cdecl.CAst.class_decl_signature }
+  List.map (fun {Codegen.class_methods;class_fields;source_file_name;
+    class_name;class_constructor;class_main;class_decl_signature} ->
+    { source_file_name     = source_file_name;
+      class_name           = class_name;
+      class_fields         = List.map limit_field class_fields;
+      class_constructor    = limit_constructor class_constructor;
+      class_main           = Utils.opt limit_body class_main;
+      class_methods        = List.map limit_method class_methods;
+      class_decl_signature = class_decl_signature }
   ) prog
 

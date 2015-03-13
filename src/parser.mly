@@ -5,6 +5,8 @@
     failure for [max_int + 1]. 
 
     Might be fixed in OCaml 3.12 *)
+
+  open Ast
   let string_to_int32 s =
     let i = Int64.of_string s in
     if i < Int64.of_int32 Int32.min_int ||
@@ -13,107 +15,105 @@
     else Int64.to_int32 i
 
 
-  let make_identifier pos i = { Ast.identifier_pos = pos;
-                                Ast.identifier     = i }
+  let make_identifier pos i = { identifier_pos = pos;
+                                identifier     = i }
 
-  let make_lvalue pos l = { Ast.lvalue_pos = pos;
-                            Ast.lvalue     = l }
+  let make_lvalue pos l = { lvalue_pos = pos;
+                            lvalue     = l }
 
-  let make_typeexp pos t = { Ast.typeexp_pos = pos;
-                             Ast.typeexp     = t }
+  let make_typeexp pos t = { typeexp_pos = pos;
+                             typeexp     = t }
 
-  let make_stm pos s = { Ast.stm_pos = pos;
-                         Ast.stm     = s }
+  let make_stm pos s = { stm_pos = pos;
+                         stm     = s }
 
-  let make_retstm pos rs = { Ast.return_stm_pos = pos;
-                             Ast.return_stm     = rs }
+  let make_retstm pos rs = { return_stm_pos = pos;
+                             return_stm     = rs }
 
-  let make_exp pos e = { Ast.exp_pos = pos;
-                         Ast.exp     = e }
+  let make_exp pos e = { exp_pos = pos;
+                         exp     = e }
 
   let make_field (texp,name,init) =
-    { Ast.field_type = texp;
-      Ast.field_name = name;
-      Ast.field_init = init }
+    { field_type = texp;
+      field_name = name;
+      field_init = init }
 
   let make_body (formals,locals,stms,return) =
-    { Ast.formals = formals;
-      Ast.locals = locals;
-      Ast.statements = stms;
-      Ast.return = return }
+    { formals = formals;
+      locals = locals;
+      statements = stms;
+      return = return }
 
   let make_method (texp,name,body) =
-    { Ast.method_return_type = texp;
-      Ast.method_name = name;
-      Ast.method_body = body }
+    { method_return_type = texp;
+      method_name = name;
+      method_body = body }
 
-  let make_constructor (id,body) =
-    { Ast.constructor_name = id;
-      Ast.constructor_body = body }
+  let make_constructor (id,body) = (id, body)
 
   let make_class (name,fields,constructor,main,methods) =
     fun source_file ->
     { 
-      Ast.source_file = source_file;
-      Ast.class_name = name;
-      Ast.class_fields = fields;
-      Ast.class_constructor = constructor;
-      Ast.class_main = main;
-      Ast.class_methods = methods }
+      source_file = source_file;
+      class_name = name;
+      class_fields = fields;
+      class_constructor = constructor;
+      class_main = main;
+      class_methods = methods }
 
   let make_source_file p decl =
     decl p.Lexing.pos_fname
 
 %}
 %token EOF
-/* Keywords */
-/* %token ABSTRACT */
+(* Keywords *)
+(* %token ABSTRACT *)
 %token BOOLEAN
-/* %token BREAK */
-/* %token BYTE */
-/* %token CASE */
-/* %token CATCH */
+(* %token BREAK *)
+(* %token BYTE *)
+(* %token CASE *)
+(* %token CATCH *)
 %token CHAR
 %token CLASS
-/* %token CONST */
-/* %token CONTINUE */
-/* %token DEFAULT */
-/* %token DO */
-/* %token DOUBLE */
+(* %token CONST *)
+(* %token CONTINUE *)
+(* %token DEFAULT *)
+(* %token DO *)
+(* %token DOUBLE *)
 %token ELSE
-/* %token EXTENDS */
-/* %token FINAL */
-/* %token FINALLY */
-/* %token FLOAT */
-/* %token FOR */
-/* %token GOTO */
+(* %token EXTENDS *)
+(* %token FINAL *)
+(* %token FINALLY *)
+(* %token FLOAT *)
+(* %token FOR *)
+(* %token GOTO *)
 %token IF
-/* %token IMPLEMENTS */
-/* %token IMPORT */
-/* %token INSTANCEOF */
+(* %token IMPLEMENTS *)
+(* %token IMPORT *)
+(* %token INSTANCEOF *)
 %token INT
-/* %token INTERFACE */
-/* %token LONG */
-/* %token NATIVE */
+(* %token INTERFACE *)
+(* %token LONG *)
+(* %token NATIVE *)
 %token NEW
-/* %token PACKAGE */
-/* %token PRIVATE */
+(* %token PACKAGE *)
+(* %token PRIVATE *)
 %token PROTECTED
 %token PUBLIC
 %token RETURN
-/* %token SHORT */
+(* %token SHORT *)
 %token STATIC
-/* %token STRICTFP */
-/* %token SUPER */
-/* %token SWITCH */
-/* %token SYNCHRONIZED */
+(* %token STRICTFP *)
+(* %token SUPER *)
+(* %token SWITCH *)
+(* %token SYNCHRONIZED *)
 %token THIS
-/* %token THROW */
+(* %token THROW *)
 %token THROWS
-/* %token TRANSIENT */
-/* %token TRY */
+(* %token TRANSIENT *)
+(* %token TRY *)
 %token VOID
-/* %token VOLATILE */
+(* %token VOLATILE *)
 %token WHILE
 
 %token <string>KEYWORD
@@ -121,7 +121,7 @@
 %token TRUE FALSE
 %token NULL
 
-/* Extra JOOS0 keywords */
+(* Extra JOOS0 keywords *)
 %token STRING
 %token EXCEPTION
 %token SYSTEM
@@ -129,7 +129,7 @@
 %token IN READ
 %token MAIN
 
-/* Delimiters */
+(* Delimiters *)
 %token L_PAREN R_PAREN
 %token L_BRACE R_BRACE
 %token L_BRACKET R_BRACKET
@@ -137,36 +137,36 @@
 %token COMMA
 %token DOT
 
-/* Assignment and complement */
+(* Assignment and complement *)
 %token ASSIGN
 %token COMPLEMENT
 
-/* Comparison */
+(* Comparison *)
 %token LT GT EQ
 %token LTEQ GTEQ NEQ
 
-/* Arithmetic */
+(* Arithmetic *)
 %token PLUS MINUS STAR DIV MOD
 %token AND OR XOR
 
-/* Literals and identifiers */
+(* Literals and identifiers *)
 %token <string>INTEGER_LITERAL
 %token <string>STRING_LITERAL
 %token <string>IDENTIFIER
 
 
-%start <Ast.class_decl> goal          /* the entry point */
+%start <class_decl> goal          (* the entry point *)
 %%
 
-/*******************************************************************
+(*******************************************************************
  * Productions                                                     *
- *******************************************************************/
+ *******************************************************************)
 
 goal :  class_declaration EOF
         { make_source_file $startpos $1 };
 
 
-/* ********** Type declarations *********** */
+(* ********** Type declarations *********** *)
 
 class_declaration
   :  PUBLIC CLASS IDENTIFIER class_body
@@ -182,20 +182,20 @@ class_body
        L_BRACE NEW name L_PAREN R_PAREN SEMICOLON R_BRACE
      method_declaration*
      R_BRACE
-     { let new_exp = make_exp $startpos (Ast.New ($12,[])) in (*FIXME: pos?*)
-       let new_stm = make_stm $startpos (Ast.Exp new_exp) in (*FIXME: pos?*)
-       let new_retstm = make_retstm $startpos Ast.VoidReturn in(*FIXME: pos?*)
+     { let new_exp = make_exp $startpos (New ($12,[])) in (*FIXME: pos?*)
+       let new_stm = make_stm $startpos (Exp new_exp) in (*FIXME: pos?*)
+       let new_retstm = make_retstm $startpos VoidReturn in(*FIXME: pos?*)
        let body = make_body ([],[],[new_stm],new_retstm) in
        ($2,$3,Some body,$17) }
   |  L_BRACE
      field_declaration*
-     constructor_declaration /* no main decl */
+     constructor_declaration (* no main decl *)
      method_declaration*
      R_BRACE
      { ($2,$3,None,$4) };
 
 
-/* ********** Field declarations ********** */
+(* ********** Field declarations ********** *)
 
 field_declaration
   :  PROTECTED typeexp IDENTIFIER variable_initializer? SEMICOLON
@@ -207,7 +207,7 @@ variable_initializer
      { $2 };
 
 
-/* ********** Method declarations ********** */
+(* ********** Method declarations ********** *)
 
 main_method_params
   :  L_PAREN STRING L_BRACKET R_BRACKET IDENTIFIER R_PAREN
@@ -249,13 +249,13 @@ method_body
      { ($2,$3,$4) };
 
 
-/* ********** Constructor declarations ********** */
+(* ********** Constructor declarations ********** *)
 
 constructor_declaration
   :  PUBLIC constructor_declarator throws_clause constructor_body
      { let (id,formals) = $2 in 
        let (lvars,stms) = $4 in
-       let retstm       = make_retstm $startpos Ast.VoidReturn in
+       let retstm       = make_retstm $startpos VoidReturn in
        let body = make_body (formals,lvars,stms,retstm) in
        make_constructor (id,body) };
 
@@ -269,11 +269,11 @@ constructor_body
      { ($2,$3) };
 
 
-/* ********** Types ********** */
+(* ********** Types ********** *)
 
 typeexp_or_void
   :  VOID
-     { make_typeexp $startpos Ast.Void }
+     { make_typeexp $startpos Void }
   |  typeexp
      { $1 };
 
@@ -285,17 +285,17 @@ typeexp
 
 reference_type
   :  name
-     { make_typeexp $startpos (Ast.Class $1) }
+     { make_typeexp $startpos (Class $1) }
   |  STRING
-     { make_typeexp $startpos Ast.String };
+     { make_typeexp $startpos String };
 
 primitive_type
   :  BOOLEAN
-     { make_typeexp $startpos Ast.Boolean }
+     { make_typeexp $startpos Boolean }
   |  INT
-     { make_typeexp $startpos Ast.Int };
+     { make_typeexp $startpos Int };
 
-/* ********** Blocks and statements ********** */
+(* ********** Blocks and statements ********** *)
 
 block
   :  L_BRACE statement* R_BRACE
@@ -331,39 +331,39 @@ statement_no_short_if
 
 statement_without_trailing_substatement
   :  block
-     { make_stm $startpos (Ast.Block $1) }
+     { make_stm $startpos (Block $1) }
   |  empty_statement
-     { make_stm $startpos (Ast.Empty) }
+     { make_stm $startpos (Empty) }
   |  expression_statement
      { $1 };
 
 empty_statement
   :  SEMICOLON
-     { make_stm $startpos (Ast.Empty) };
+     { make_stm $startpos (Empty) };
 
 expression_statement
   :  statement_expression SEMICOLON
-     { make_stm $startpos (Ast.Exp $1) };
+     { make_stm $startpos (Exp $1) };
 
 if_then_statement
   :  IF L_PAREN expression R_PAREN statement
-     { make_stm $startpos (Ast.IfThen($3,$5)) };
+     { make_stm $startpos (IfThen($3,$5)) };
 
 if_then_else_statement
   :  IF L_PAREN expression R_PAREN statement_no_short_if ELSE statement
-     { make_stm $startpos (Ast.IfThenElse($3,$5,$7)) };
+     { make_stm $startpos (IfThenElse($3,$5,$7)) };
 
 if_then_else_statement_no_short_if
   :  IF L_PAREN expression R_PAREN statement_no_short_if ELSE statement_no_short_if
-     { make_stm $startpos (Ast.IfThenElse($3,$5,$7)) };
+     { make_stm $startpos (IfThenElse($3,$5,$7)) };
 
 while_statement
   :  WHILE L_PAREN expression R_PAREN statement
-     { make_stm $startpos (Ast.While($3,$5)) };
+     { make_stm $startpos (While($3,$5)) };
 
 while_statement_no_short_if
   :  WHILE L_PAREN expression R_PAREN statement_no_short_if
-     { make_stm $startpos (Ast.While($3,$5)) };
+     { make_stm $startpos (While($3,$5)) };
 
 return_statement
   :  void_return_statement
@@ -373,48 +373,48 @@ return_statement
 
 void_return_statement
   :  RETURN SEMICOLON
-     { make_retstm $startpos Ast.VoidReturn };
+     { make_retstm $startpos VoidReturn };
 
 value_return_statement
   :  RETURN expression SEMICOLON
-     { make_retstm $startpos (Ast.ValueReturn $2) };
+     { make_retstm $startpos (ValueReturn $2) };
 
 
-/* ********** Literals and names ********** */
+(* ********** Literals and names ********** *)
 
 literal 
   :  INTEGER_LITERAL
       { try
           let i = string_to_int32 $1 in
-          make_exp $startpos (Ast.IntConst i)
+          make_exp $startpos (IntConst i)
         with Failure msg -> 
           Error.error $startpos ("Integer value out of range: " ^ msg) }
   |  MINUS INTEGER_LITERAL
       { try
           let i = string_to_int32 ("-" ^ $2) in
-          make_exp $startpos (Ast.IntConst i)
+          make_exp $startpos (IntConst i)
         with Failure msg -> 
           Error.error $startpos ("Integer value out of range: " ^ msg) }
   |  boolean_literal
-     { make_exp $startpos (Ast.BooleanConst $1) }
+     { make_exp $startpos (BooleanConst $1) }
   |  STRING_LITERAL
-     { make_exp $startpos (Ast.StringConst $1) }
+     { make_exp $startpos (StringConst $1) }
   |  null_literal
-     { make_exp $startpos (Ast.Null) };
+     { make_exp $startpos (Null) };
 
 literal_not_integer
   :  MINUS INTEGER_LITERAL
       { try
           let i = string_to_int32 ("-" ^ $2) in
-          make_exp $startpos (Ast.IntConst i)
+          make_exp $startpos (IntConst i)
         with Failure msg -> 
           Error.error $startpos ("Integer value out of range: " ^ msg) }
   |  boolean_literal
-     { make_exp $startpos (Ast.BooleanConst $1) }
+     { make_exp $startpos (BooleanConst $1) }
   |  STRING_LITERAL
-     { make_exp $startpos (Ast.StringConst $1) }
+     { make_exp $startpos (StringConst $1) }
   |  null_literal
-     { make_exp $startpos (Ast.Null) };
+     { make_exp $startpos (Null) };
 
 boolean_literal
   :  TRUE
@@ -431,7 +431,7 @@ name
      { make_identifier $startpos $1 };
 
 
-/* ********** Expressions ********** */
+(* ********** Expressions ********** *)
 
 statement_expression
   :  assignment
@@ -445,9 +445,9 @@ primary
   :  literal
      { $1 }
   |  THIS
-     { make_exp $startpos (Ast.This) }
+     { make_exp $startpos (This) }
   |  left_hand_side
-     { make_exp $startpos (Ast.Lvalue $1) }
+     { make_exp $startpos (Lvalue $1) }
   |  L_PAREN expression R_PAREN
      { $2 }
   |  class_instance_creation_expression
@@ -459,9 +459,9 @@ primary_not_integer
   :  literal_not_integer
      { $1 }
   |  THIS
-     { make_exp $startpos (Ast.This) }
+     { make_exp $startpos (This) }
   |  left_hand_side
-     { make_exp $startpos (Ast.Lvalue $1) }
+     { make_exp $startpos (Lvalue $1) }
   |  L_PAREN expression R_PAREN
      { $2 }
   |  class_instance_creation_expression
@@ -473,7 +473,7 @@ primary_not_integer_not_this
   :  literal_not_integer
      { $1 }
   |  left_hand_side
-     { make_exp $startpos (Ast.Lvalue $1) }
+     { make_exp $startpos (Lvalue $1) }
   |  L_PAREN expression R_PAREN
      { $2 }
   |  class_instance_creation_expression
@@ -483,7 +483,7 @@ primary_not_integer_not_this
 
 class_instance_creation_expression
   :  NEW name L_PAREN argument_list R_PAREN
-     { make_exp $startpos (Ast.New($2,$4)) };
+     { make_exp $startpos (New($2,$4)) };
 
 argument_list
   :
@@ -499,91 +499,91 @@ argument_list_nonempty
 
 method_invocation
   :  THIS DOT IDENTIFIER L_PAREN argument_list R_PAREN
-     { let this = make_exp $startpos Ast.This in
+     { let this = make_exp $startpos This in
        let id = make_identifier $startpos $3 in
-       make_exp $startpos (Ast.Invoke(this,id,$5)) }
+       make_exp $startpos (Invoke(this,id,$5)) }
   |  primary_not_integer_not_this DOT IDENTIFIER L_PAREN argument_list R_PAREN
      { let id = make_identifier $startpos $3 in
-       make_exp $startpos (Ast.Invoke($1,id,$5)) }
+       make_exp $startpos (Invoke($1,id,$5)) }
   |  SYSTEM DOT OUT DOT PRINT L_PAREN expression R_PAREN
-     { make_exp $startpos (Ast.Print $7) }
+     { make_exp $startpos (Print $7) }
   |  SYSTEM DOT IN DOT READ L_PAREN R_PAREN
-     { make_exp $startpos Ast.Read };
+     { make_exp $startpos Read };
 
 unary_expression
   :  primary
      { $1 }
   |  MINUS unary_expression_not_integer
-     { make_exp $startpos (Ast.Unop(Ast.Negate,$2)) }
+     { make_exp $startpos (Unop(Negate,$2)) }
   |  COMPLEMENT unary_expression
-     { make_exp $startpos (Ast.Unop(Ast.Complement,$2)) };
+     { make_exp $startpos (Unop(Complement,$2)) };
 
 unary_expression_not_integer
   :  primary_not_integer
      { $1 }
   |  MINUS unary_expression_not_integer
-     { make_exp $startpos (Ast.Unop(Ast.Negate,$2)) }
+     { make_exp $startpos (Unop(Negate,$2)) }
   |  COMPLEMENT unary_expression
-     { make_exp $startpos (Ast.Unop(Ast.Complement,$2)) };
+     { make_exp $startpos (Unop(Complement,$2)) };
 
 multiplicative_expression
   :  unary_expression
      { $1 }
   |  multiplicative_expression STAR unary_expression
-     { make_exp $startpos (Ast.Binop($1,Ast.Times,$3)) }
+     { make_exp $startpos (Binop($1,Times,$3)) }
   |  multiplicative_expression DIV unary_expression
-     { make_exp $startpos (Ast.Binop($1,Ast.Divide,$3)) }
+     { make_exp $startpos (Binop($1,Divide,$3)) }
   |  multiplicative_expression MOD unary_expression
-     { make_exp $startpos (Ast.Binop($1,Ast.Modulo,$3)) };
+     { make_exp $startpos (Binop($1,Modulo,$3)) };
 
 additive_expression
   :  multiplicative_expression
      { $1 }
   |  additive_expression PLUS multiplicative_expression
-     { make_exp $startpos (Ast.Binop($1,Ast.Add,$3)) }
+     { make_exp $startpos (Binop($1,Add,$3)) }
   |  additive_expression PLUS L_PAREN CHAR R_PAREN unary_expression
-     { let unexp = make_exp $startpos (Ast.Unop(Ast.CharToString,$6)) in
-       make_exp $startpos (Ast.Binop($1,Ast.Concat,unexp)) }
+     { let unexp = make_exp $startpos (Unop(CharToString,$6)) in
+       make_exp $startpos (Binop($1,Concat,unexp)) }
   |  additive_expression MINUS multiplicative_expression
-     { make_exp $startpos (Ast.Binop($1,Ast.Minus,$3)) };
+     { make_exp $startpos (Binop($1,Minus,$3)) };
 
 relational_expression
   :  additive_expression
      { $1 }
   |  relational_expression LT additive_expression
-     { make_exp $startpos (Ast.Binop($1,Ast.Lt,$3)) }
+     { make_exp $startpos (Binop($1,Lt,$3)) }
   |  relational_expression GT additive_expression
-     { make_exp $startpos (Ast.Binop($1,Ast.Gt,$3)) }
+     { make_exp $startpos (Binop($1,Gt,$3)) }
   |  relational_expression LTEQ additive_expression
-     { make_exp $startpos (Ast.Binop($1,Ast.Le,$3)) }
+     { make_exp $startpos (Binop($1,Le,$3)) }
   |  relational_expression GTEQ additive_expression
-     { make_exp $startpos (Ast.Binop($1,Ast.Ge,$3)) };
+     { make_exp $startpos (Binop($1,Ge,$3)) };
 
 equality_expression
   :  relational_expression
      { $1 }
   |  equality_expression EQ relational_expression
-     { make_exp $startpos (Ast.Binop($1,Ast.Eq,$3)) }
+     { make_exp $startpos (Binop($1,Eq,$3)) }
   |  equality_expression NEQ relational_expression
-     { make_exp $startpos (Ast.Binop($1,Ast.Ne,$3)) };
+     { make_exp $startpos (Binop($1,Ne,$3)) };
 
 and_expression
   :  equality_expression
      { $1 }
   |  and_expression AND equality_expression
-     { make_exp $startpos (Ast.Binop($1,Ast.And,$3)) };
+     { make_exp $startpos (Binop($1,And,$3)) };
 
 exclusive_or_expression
   :  and_expression
      { $1 }
   |  exclusive_or_expression XOR and_expression
-     { make_exp $startpos (Ast.Binop($1,Ast.Xor,$3)) };
+     { make_exp $startpos (Binop($1,Xor,$3)) };
 
 inclusive_or_expression
   :  exclusive_or_expression
      { $1 }
   |  inclusive_or_expression OR exclusive_or_expression
-     { make_exp $startpos (Ast.Binop($1,Ast.Or,$3)) };
+     { make_exp $startpos (Binop($1,Or,$3)) };
 
 expression
   :  inclusive_or_expression
@@ -593,10 +593,10 @@ expression
 
 assignment
   :  left_hand_side ASSIGN expression
-     { make_exp $startpos (Ast.Assignment($1,$3)) };
+     { make_exp $startpos (Assignment($1,$3)) };
 
 left_hand_side
   :  name
-     { make_lvalue $startpos (Ast.Local $1) }
+     { make_lvalue $startpos (Local $1) }
   |  THIS DOT name
-     { make_lvalue $startpos (Ast.Field $3) };
+     { make_lvalue $startpos (Field $3) };

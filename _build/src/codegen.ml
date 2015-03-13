@@ -10,11 +10,41 @@
     unchanged if the type of the expression is void.
 *)
 
-module TAst = Typecheckingast
-module RAst = Resourceast
-module CAst = Codegenast
-module Inst = Instruction
+type identifier = Ast.identifier
 
+
+type typeexp = Types.typeexp
+
+
+type formal_param = typeexp * identifier * int (*NEW*)
+(*type local_decl   = typeexp * identifier (* * exp *) * int (*NEW*)*)
+
+type field_decl = typeexp * identifier (*field_init : exp option;*) * string
+
+type body =
+    { formals    : formal_param list;
+(*    locals     : local_decl list; *)
+      body       : Inst.instruction list; }
+
+type constructor_decl = identifier * body * string
+
+type method_decl =
+    { method_return_type : typeexp;
+      method_name        : identifier;
+      method_body        : body;
+      method_signature   : string (*NEW*) }
+
+
+type class_decl =
+    { source_file_name     : string;
+      class_name           : identifier;
+      class_fields         : field_decl list;
+      class_constructor    : constructor_decl;
+      class_main           : body option;
+      class_methods        : method_decl list;
+      class_decl_signature : string (*NEW*) }
+
+type program = class_decl list
 
 let codegen_method_sig_known msig numargs numreturns =
   { Inst.method_sig      = msig;
@@ -32,40 +62,40 @@ let codegen_method_sig id base m =
   let msig = basesig ^ "/" ^ mname ^ "(" ^ (String.concat "" argsigs) ^ ")" ^ ressig in
   codegen_method_sig_known msig numargs numreturns
 
-let codegen_constructor_sig base c =
+let codegen_constructor_sig base (name,formals) =
     let basesig = Types.cname_to_sig base in
-    let argsigs = List.map Types.typeexp_to_sig c.Types.constructor_formals in
-    let numargs = List.length c.Types.constructor_formals in
+    let argsigs = List.map Types.typeexp_to_sig formals in
+    let numargs = List.length formals in
     let msig    = basesig ^ "/<init>(" ^ (String.concat "" argsigs) ^ ")V" in
     codegen_method_sig_known msig numargs 0
 
 let codegen_cond = function
-  | TAst.Eq -> Inst.Eq
-  | TAst.Ne -> Inst.Ne
-  | TAst.Lt -> Inst.Lt
-  | TAst.Le -> Inst.Le
-  | TAst.Gt -> Inst.Gt
-  | TAst.Ge -> Inst.Ge
-  | TAst.Aeq -> Inst.Aeq
-  | TAst.Ane -> Inst.Ane
+  | Typing.Eq -> Inst.Eq
+  | Typing.Ne -> Inst.Ne
+  | Typing.Lt -> Inst.Lt
+  | Typing.Le -> Inst.Le
+  | Typing.Gt -> Inst.Gt
+  | Typing.Ge -> Inst.Ge
+  | Typing.Aeq -> Inst.Aeq
+  | Typing.Ane -> Inst.Ane
   | _ -> raise (Error.InternalCompilerError "Illegal cond in binary operation")
 
 
 type info = { tenv             : Types.class_type Types.M.t;
               class_type       : Types.class_type;
-              nonstatic_fields : RAst.field_decl list }
+              nonstatic_fields : Res.field_decl list }
 
 
-let rec codegen_lvalue_read info lvalue =
-  match lvalue.RAst.lvalue with
-  | RAst.Field (id, ftype) -> 
+let rec codegen_lvalue_read info {Res.lvalue;lvalue_type} =
+  match lvalue with
+  | Res.Field (id, ftype) -> 
     let fieldname = id.Ast.identifier in
-    let fieldtype = Types.typeexp_to_sig lvalue.RAst.lvalue_type in
+    let fieldtype = Types.typeexp_to_sig lvalue_type in
     let basesig   = info.class_type.Types.class_name in
     [Inst.Iaload 0;
      Inst.Igetfield (basesig ^ "/" ^ fieldname ^ " " ^ fieldtype)]
-  | RAst.Local (id, i) -> 
-    (match lvalue.RAst.lvalue_type with
+  | Res.Local (id, i) -> 
+    (match lvalue_type with
       | Types.Int
       | Types.Boolean -> [Inst.Iiload i] (* integer load *)
       | Types.String 
@@ -73,17 +103,17 @@ let rec codegen_lvalue_read info lvalue =
       | _ -> raise (Error.InternalCompilerError "Illegal type of lvalue") )
 
 
-and codegen_lvalue_write info lvalue =
-  match lvalue.RAst.lvalue with
-    | RAst.Field (id,base) ->
+and codegen_lvalue_write info {Res.lvalue;lvalue_type} =
+  match lvalue with
+    | Res.Field (id,base) ->
       let fieldname = id.Ast.identifier in
-      let fieldtype = Types.typeexp_to_sig lvalue.RAst.lvalue_type in
+      let fieldtype = Types.typeexp_to_sig lvalue_type in
       let basesig   = info.class_type.Types.class_name in
       [Inst.Iaload(0);
        Inst.Iswap;
        Inst.Iputfield (basesig ^ "/" ^ fieldname ^ " " ^ fieldtype)]
-    | RAst.Local (id,i) -> 
-      (match lvalue.RAst.lvalue_type with
+    | Res.Local (id,i) -> 
+      (match lvalue_type with
         | Types.Int
         | Types.Boolean  -> [Inst.Iistore i] (* integer store *)
         | Types.String 
@@ -91,28 +121,28 @@ and codegen_lvalue_write info lvalue =
         | _ -> raise (Error.InternalCompilerError "Illegal type of lvalue") )
 
 
-and codegen_exp info exp =
-  match exp.RAst.exp with
-  | RAst.Binop (e1,op,e2) ->
+and codegen_exp info {Res.exp;exp_type} =
+  match exp with
+  | Res.Binop (e1,op,e2) ->
     let ie1 = codegen_exp info e1 in
     let ie2 = codegen_exp info e2 in
     (match op with
-      | TAst.Add    -> List.concat [ie1; ie2; [Inst.Iiadd]]
-      | TAst.Minus  -> List.concat [ie1; ie2; [Inst.Iisub]]
-      | TAst.Times  -> List.concat [ie1; ie2; [Inst.Iimul]]
-      | TAst.Divide -> List.concat [ie1; ie2; [Inst.Iidiv]]
-      | TAst.Modulo -> List.concat [ie1; ie2; [Inst.Iirem]]
-      | TAst.And    -> List.concat [ie1; ie2; [Inst.Iiand]]
-      | TAst.Or     -> List.concat [ie1; ie2; [Inst.Iior]]
-      | TAst.Xor    -> List.concat [ie1; ie2; [Inst.Iixor]]
-      | TAst.Eq    
-      | TAst.Ne    
-      | TAst.Lt
-      | TAst.Le
-      | TAst.Gt
-      | TAst.Ge
-      | TAst.Aeq
-      | TAst.Ane    ->
+      | Typing.Add    -> List.concat [ie1; ie2; [Inst.Iiadd]]
+      | Typing.Minus  -> List.concat [ie1; ie2; [Inst.Iisub]]
+      | Typing.Times  -> List.concat [ie1; ie2; [Inst.Iimul]]
+      | Typing.Divide -> List.concat [ie1; ie2; [Inst.Iidiv]]
+      | Typing.Modulo -> List.concat [ie1; ie2; [Inst.Iirem]]
+      | Typing.And    -> List.concat [ie1; ie2; [Inst.Iiand]]
+      | Typing.Or     -> List.concat [ie1; ie2; [Inst.Iior]]
+      | Typing.Xor    -> List.concat [ie1; ie2; [Inst.Iixor]]
+      | Typing.Eq    
+      | Typing.Ne    
+      | Typing.Lt
+      | Typing.Le
+      | Typing.Gt
+      | Typing.Ge
+      | Typing.Aeq
+      | Typing.Ane    ->
         let cond = codegen_cond op in
         let truel = Inst.make_label "true" in
         let endl = Inst.make_label "end" in
@@ -124,18 +154,18 @@ and codegen_exp info exp =
                       Inst.Ilabel truel;
                       Inst.Ildc_int 1l;
                       Inst.Ilabel endl]]
-      | TAst.Concat ->
+      | Typing.Concat ->
         List.concat [ie1;
                      ie2;
                      [Inst.Iinvokevirtual
                          (codegen_method_sig_known 
                             "java/lang/String/concat(Ljava/lang/String;)Ljava/lang/String;" 1 1)]]
     )
-  | RAst.Unop (op,e) ->
+  | Res.Unop (op,e) ->
     let ie = codegen_exp info e in
     (match op with
-      | TAst.Negate     -> List.concat [ie; [Inst.Iineg]]
-      | TAst.Complement ->
+      | Typing.Negate     -> List.concat [ie; [Inst.Iineg]]
+      | Typing.Complement ->
           let truel = Inst.make_label "true" in
           let endl = Inst.make_label "end" in
           List.concat [ie; [Inst.Iif(Inst.Eq,truel);
@@ -144,56 +174,56 @@ and codegen_exp info exp =
                             Inst.Ilabel truel;
                             Inst.Ildc_int 1l;
                             Inst.Ilabel endl]]
-      | TAst.BooleanToString ->
+      | Typing.BooleanToString ->
         let msig = "java/lang/String/valueOf(Z)Ljava/lang/String;" in
         List.concat [ie; 
                      [Inst.Iinvokestatic (codegen_method_sig_known msig 1 1) ]]
-      | TAst.IntToString ->
+      | Typing.IntToString ->
         let msig = "java/lang/String/valueOf(I)Ljava/lang/String;" in
         List.concat [ie; 
                      [Inst.Iinvokestatic (codegen_method_sig_known msig 1 1) ]]
-      | TAst.CharToString ->
+      | Typing.CharToString ->
         let msig = "java/lang/String/valueOf(C)Ljava/lang/String;" in
         List.concat [ie; 
                      [Inst.Iinvokestatic (codegen_method_sig_known msig 1 1) ]]
-      | TAst.ObjectToString ->
+      | Typing.ObjectToString ->
         let msig = 
           "java/lang/String/valueOf(Ljava/lang/Object;)Ljava/lang/String;" in
         List.concat [ie; 
                      [Inst.Iinvokestatic (codegen_method_sig_known msig 1 1) ]]
     )
-  | RAst.IntConst i     -> [Inst.Ildc_int i]
-  | RAst.StringConst s  -> [Inst.Ildc_string s]
-  | RAst.BooleanConst b -> [Inst.Ildc_int (if b then 1l else 0l)]
-  | RAst.Null           -> [Inst.Iaconst_null]
-  | RAst.This           -> [Inst.Iaload 0]
-  | RAst.Invoke (e,id,es,mtype) ->
+  | Res.IntConst i     -> [Inst.Ildc_int i]
+  | Res.StringConst s  -> [Inst.Ildc_string s]
+  | Res.BooleanConst b -> [Inst.Ildc_int (if b then 1l else 0l)]
+  | Res.Null           -> [Inst.Iaconst_null]
+  | Res.This           -> [Inst.Iaload 0]
+  | Res.Invoke (e,id,es,mtype) ->
     let ie = codegen_exp info e in
     let ies = List.concat (List.map (fun e -> codegen_exp info e) es) in
-    let recvtype = e.RAst.exp_type in
+    let recvtype = e.Res.exp_type in
     let msig = (codegen_method_sig id (Types.typeexp_to_string recvtype) mtype) in
     let invokeinst = [Inst.Iinvokevirtual msig] in
     List.concat [ie;
                  ies;
                  invokeinst]
-  | RAst.New (typ,es,c) ->
+  | Res.New (typ,es,c) ->
     let ies = List.concat (List.map (fun e -> codegen_exp info e) es) in
-    let typesig = Types.typeexp_to_string exp.RAst.exp_type in
+    let typesig = Types.typeexp_to_string exp_type in
     List.concat [[Inst.Inew typesig;
                   Inst.Idup];
                  ies;
                  [Inst.Iinvokespecial (codegen_constructor_sig typesig c)]]
-  | RAst.Lvalue lval ->
+  | Res.Lvalue lval ->
     codegen_lvalue_read info lval
-  | RAst.Assignment (lval,e) ->
+  | Res.Assignment (lval,e) ->
     let ie = codegen_exp info e in
     let writeinst = codegen_lvalue_write info lval in
     List.concat [ie;
                  [Inst.Idup];
                  writeinst]
-  | RAst.Print e ->
+  | Res.Print e ->
     let ie      = codegen_exp info e in
-    let argtype = (match e.RAst.exp_type with
+    let argtype = (match e.Res.exp_type with
       | Types.Int -> "I"
       | Types.Boolean -> "Z"
       | Types.String
@@ -204,20 +234,20 @@ and codegen_exp info exp =
                  [Inst.Igetstatic "java/lang/System/out Ljava/io/PrintStream;";
                   Inst.Iswap;
                   Inst.Iinvokevirtual (codegen_method_sig_known msig 1 0)]]
-  | RAst.Read ->
+  | Res.Read ->
     (* Generate code as if System.in.read() was called. *)
     [Inst.Igetstatic "java/lang/System/in Ljava/io/InputStream;";
      Inst.Iinvokevirtual (codegen_method_sig_known "java/io/InputStream/read()I" 0 1)]
 
 
-let rec codegen_stm info stm =
-  match stm.RAst.stm with
-  | RAst.Exp e ->
+let rec codegen_stm info {Res.stm} =
+  match stm with
+  | Res.Exp e ->
     let ie = codegen_exp info e in
-    (match e.RAst.exp_type with
+    (match e.Res.exp_type with
       | Types.Void -> ie
       | _ -> ie @ [Inst.Ipop] )
-  | RAst.IfThen (e,s) ->
+  | Res.IfThen (e,s) ->
     let falsel = Inst.make_label "false" in
     let ie = codegen_exp info e in
     let is = codegen_stm info s in
@@ -225,8 +255,8 @@ let rec codegen_stm info stm =
       [ie;
        [Inst.Iif (Inst.Eq,falsel)];
        is;
-       [Inst.Ilabel falsel;]]
-  | RAst.IfThenElse (e,s1,s2) ->
+       [Inst.Ilabel falsel]]
+  | Res.IfThenElse (e,s1,s2) ->
     let falsel = Inst.make_label "false" in
     let endifl = Inst.make_label "endif" in
     let ie  = codegen_exp info e in
@@ -239,8 +269,8 @@ let rec codegen_stm info stm =
        [Inst.Igoto endifl;
         Inst.Ilabel falsel];
        is2;
-       [Inst.Ilabel endifl;]]
-  | RAst.While (e,s) ->
+       [Inst.Ilabel endifl]]
+  | Res.While (e,s) ->
     let loopl = Inst.make_label "loop" in
     let condl = Inst.make_label "cond" in
     let ie = codegen_exp info e in
@@ -252,62 +282,56 @@ let rec codegen_stm info stm =
        [Inst.Ilabel condl];
        ie;
        [Inst.Iif (Inst.Ne,loopl)]]
-  | RAst.Empty -> []
-  | RAst.Block b ->
+  | Res.Empty -> []
+  | Res.Block b ->
     codegen_stm_list info b
 
 
 and codegen_stm_list info stms = Utils.concat_list (codegen_stm info) stms
  
 
-let codegen_return_stm info rstm = match rstm.RAst.return_stm with
-  | RAst.VoidReturn -> [Inst.Ireturn]
-  | RAst.ValueReturn e ->
+let codegen_return_stm info {Res.return_stm} =
+  match return_stm with
+  | Res.VoidReturn -> [Inst.Ireturn]
+  | Res.ValueReturn e ->
     let ie = codegen_exp info e in
-    (match e.RAst.exp_type with
+    (match e.Res.exp_type with
       | Types.Int
       | Types.Boolean -> 
-        List.concat [ie;
-                     [Inst.Iireturn]]
+        List.concat [ie; [Inst.Iireturn]]
       | Types.String
       | Types.Class _
       | Types.Null ->
-        List.concat [ie;
-                     [Inst.Iareturn]]
+        List.concat [ie; [Inst.Iareturn]]
       | Types.Void ->
-        raise (Error.InternalCompilerError "Illegal type of return expression"))
+        raise (Error.InternalCompilerError "Illegal type of return expression")
+    )
 
 
-let codegen_local info ldecl =
-  let (typ,id,exp,offset) = ldecl in
-  let is = codegen_exp info exp in
+let codegen_local info (typ, id, exp, offset) =
   match typ with
-    | Types.Int
-    | Types.Boolean -> List.concat [is; [Inst.Iistore offset]]  (* integer store *)
-    | Types.Class _
-    | Types.String -> List.concat [is; [Inst.Iastore offset]]  (* address store *)
-    | Types.Void
-    | Types.Null ->
-      raise (Error.InternalCompilerError "Illegal type of local initializer")
+  | Types.Int
+  | Types.Boolean -> List.concat [codegen_exp info exp; [Inst.Iistore offset]]  (* integer store *)
+  | Types.Class _
+  | Types.String -> List.concat [codegen_exp info exp; [Inst.Iastore offset]]  (* address store *)
+  | Types.Void
+  | Types.Null -> raise (Error.InternalCompilerError "Illegal type of local initializer")
 
 
-
-let codegen_field info fdecl =
-  { CAst.field_type      = fdecl.RAst.field_type;
-    CAst.field_name      = fdecl.RAst.field_name;
-    CAst.field_signature = fdecl.RAst.field_signature; }
+let codegen_field info {Res.field_type;field_name;field_signature} =
+  (field_type, field_name, field_signature)
 
 
-let codegen_body info fab =
-  let local_init = Utils.concat_list (codegen_local info) fab.RAst.locals in
-  let body       = codegen_stm_list info fab.RAst.statements in
-  let return     = codegen_return_stm info fab.RAst.return in
-  { CAst.formals = fab.RAst.formals;
-    CAst.body    = List.concat [local_init; body; return] }
+let codegen_body info {Res.locals;statements;return;formals} =
+  let local_init = Utils.concat_list (codegen_local info) locals in
+  let body       = codegen_stm_list info statements in
+  let return     = codegen_return_stm info return in
+  { formals = formals;
+    body    = List.concat [local_init; body; return] }
 
 
-let codegen_constructor info cdecl =
-  let fab = codegen_body info cdecl.RAst.constructor_body in
+let codegen_constructor info (name, body, signature) =
+  let fab = codegen_body info body in
   let supercall = [Inst.Iaload 0;
                    Inst.Iinvokespecial 
                      (codegen_method_sig_known "java/lang/Object/<init>()V" 0 0)
@@ -315,49 +339,46 @@ let codegen_constructor info cdecl =
   in
   let field_init =
       List.fold_right (fun fdecl flist ->
-        match fdecl.RAst.field_init with
+        match fdecl.Res.field_init with
         | None -> flist
         | Some e -> 
           let ie = codegen_exp info e in
-          let fieldsig = fdecl.RAst.field_signature
-                   ^ " " ^ (Types.typeexp_to_sig fdecl.RAst.field_type) in
+          let fieldsig = fdecl.Res.field_signature
+                   ^ " " ^ (Types.typeexp_to_sig fdecl.Res.field_type) in
           List.concat [[Inst.Iaload 0];
                        ie;
                        [Inst.Iputfield fieldsig];
                        flist]
       ) info.nonstatic_fields []
   in
-  let insts = List.concat [supercall; field_init; fab.CAst.body] in
-  { CAst.constructor_name      = cdecl.RAst.constructor_name;
-    CAst.constructor_body      = { fab with CAst.body = insts };
-    CAst.constructor_signature = cdecl.RAst.constructor_signature }
+  let insts = List.concat [supercall; field_init; fab.body] in
+  (name, { fab with body = insts }, signature)
 
 
-let codegen_method info mdecl =
-  { CAst.method_return_type = mdecl.RAst.method_return_type;
-    CAst.method_name        = mdecl.RAst.method_name;
-    CAst.method_body        = codegen_body info mdecl.RAst.method_body;
-    CAst.method_signature   = mdecl.RAst.method_signature }
+let codegen_method info {Res.method_return_type;method_name;method_body;method_signature} =
+  { method_return_type = method_return_type;
+    method_name        = method_name;
+    method_body        = codegen_body info method_body;
+    method_signature   = method_signature }
 
 
 let codegen_program tenv prog =
-  List.map (fun cdecl ->
-    let class_name = cdecl.RAst.class_name in
+  List.map (fun {Res.class_name;class_fields;class_main;class_methods;class_constructor;class_decl_signature;source_file_name} ->
     let class_type = 
       Env.lookup_env tenv "class" class_name.Ast.identifier class_name.Ast.identifier_pos in
     let info    = { tenv             = tenv;
                     class_type       = class_type;
-                    nonstatic_fields = cdecl.RAst.class_fields } in
-    let fields = List.map (codegen_field info) cdecl.RAst.class_fields  in
-    let main   = Utils.opt (codegen_body info) cdecl.RAst.class_main in
-    let mdecls = List.map (codegen_method info) cdecl.RAst.class_methods in
+                    nonstatic_fields = class_fields } in
+    let class_fields = List.map (codegen_field info) class_fields  in
+    let class_main   = Utils.opt (codegen_body info) class_main in
+    let class_methods = List.map (codegen_method info) class_methods in
     { 
-      CAst.source_file_name     = cdecl.RAst.source_file_name;
-      CAst.class_name           = cdecl.RAst.class_name;
-      CAst.class_fields         = fields;
-      CAst.class_constructor    = codegen_constructor info cdecl.RAst.class_constructor;
-      CAst.class_main           = main;
-      CAst.class_methods        = mdecls;
-      CAst.class_decl_signature = cdecl.RAst.class_decl_signature; }
+      source_file_name     = source_file_name;
+      class_name           = class_name;
+      class_fields         = class_fields;
+      class_constructor    = codegen_constructor info class_constructor;
+      class_main           = class_main;
+      class_methods        = class_methods;
+      class_decl_signature = class_decl_signature; }
   ) prog
 

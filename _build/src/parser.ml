@@ -144,6 +144,8 @@ and _menhir_state =
     failure for [max_int + 1]. 
 
     Might be fixed in OCaml 3.12 *)
+
+  open Ast
   let string_to_int32 s =
     let i = Int64.of_string s in
     if i < Int64.of_int32 Int32.min_int ||
@@ -152,53 +154,51 @@ and _menhir_state =
     else Int64.to_int32 i
 
 
-  let make_identifier pos i = { Ast.identifier_pos = pos;
-                                Ast.identifier     = i }
+  let make_identifier pos i = { identifier_pos = pos;
+                                identifier     = i }
 
-  let make_lvalue pos l = { Ast.lvalue_pos = pos;
-                            Ast.lvalue     = l }
+  let make_lvalue pos l = { lvalue_pos = pos;
+                            lvalue     = l }
 
-  let make_typeexp pos t = { Ast.typeexp_pos = pos;
-                             Ast.typeexp     = t }
+  let make_typeexp pos t = { typeexp_pos = pos;
+                             typeexp     = t }
 
-  let make_stm pos s = { Ast.stm_pos = pos;
-                         Ast.stm     = s }
+  let make_stm pos s = { stm_pos = pos;
+                         stm     = s }
 
-  let make_retstm pos rs = { Ast.return_stm_pos = pos;
-                             Ast.return_stm     = rs }
+  let make_retstm pos rs = { return_stm_pos = pos;
+                             return_stm     = rs }
 
-  let make_exp pos e = { Ast.exp_pos = pos;
-                         Ast.exp     = e }
+  let make_exp pos e = { exp_pos = pos;
+                         exp     = e }
 
   let make_field (texp,name,init) =
-    { Ast.field_type = texp;
-      Ast.field_name = name;
-      Ast.field_init = init }
+    { field_type = texp;
+      field_name = name;
+      field_init = init }
 
   let make_body (formals,locals,stms,return) =
-    { Ast.formals = formals;
-      Ast.locals = locals;
-      Ast.statements = stms;
-      Ast.return = return }
+    { formals = formals;
+      locals = locals;
+      statements = stms;
+      return = return }
 
   let make_method (texp,name,body) =
-    { Ast.method_return_type = texp;
-      Ast.method_name = name;
-      Ast.method_body = body }
+    { method_return_type = texp;
+      method_name = name;
+      method_body = body }
 
-  let make_constructor (id,body) =
-    { Ast.constructor_name = id;
-      Ast.constructor_body = body }
+  let make_constructor (id,body) = (id, body)
 
   let make_class (name,fields,constructor,main,methods) =
     fun source_file ->
     { 
-      Ast.source_file = source_file;
-      Ast.class_name = name;
-      Ast.class_fields = fields;
-      Ast.class_constructor = constructor;
-      Ast.class_main = main;
-      Ast.class_methods = methods }
+      source_file = source_file;
+      class_name = name;
+      class_fields = fields;
+      class_constructor = constructor;
+      class_main = main;
+      class_methods = methods }
 
   let make_source_file p decl =
     decl p.Lexing.pos_fname
@@ -274,7 +274,7 @@ and _menhir_goto_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> (Ast.
         let _menhir_stack = Obj.magic _menhir_stack in
         let ((_menhir_stack, _menhir_s, _1, _startpos__1_), _, _3) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Assignment(_1,_3)) ) in
+        let _v : (Ast.exp) =      ( make_exp _startpos (Assignment(_1,_3)) ) in
         (match _menhir_s with
         | MenhirState253 | MenhirState157 | MenhirState168 | MenhirState172 | MenhirState176 | MenhirState163 | MenhirState12 | MenhirState17 | MenhirState23 | MenhirState28 | MenhirState33 | MenhirState34 | MenhirState100 | MenhirState42 | MenhirState64 | MenhirState69 ->
             let _menhir_stack = Obj.magic _menhir_stack in
@@ -375,7 +375,7 @@ and _menhir_goto_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> (Ast.
             let _menhir_stack = Obj.magic _menhir_stack in
             let (((_menhir_stack, _menhir_s, _startpos__1_), _startpos__6_), _, _7) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Print _7) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (Print _7) ) in
             _menhir_goto_method_invocation _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -644,7 +644,7 @@ and _menhir_goto_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> (Ast.
             let _startpos__3_ = _startpos in
             let ((_menhir_stack, _menhir_s, _startpos__1_), _, _2) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.return_stm) =      ( make_retstm _startpos (Ast.ValueReturn _2) ) in
+            let _v : (Ast.return_stm) =      ( make_retstm _startpos (ValueReturn _2) ) in
             let _menhir_stack = Obj.magic _menhir_stack in
             let _menhir_stack = Obj.magic _menhir_stack in
             let _1 = _v in
@@ -802,7 +802,7 @@ and _menhir_goto_exclusive_or_expression : _menhir_env -> 'ttv_tail -> _menhir_s
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((_menhir_stack, _menhir_s, _1, _startpos__1_), _, _3, _startpos__3_) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Binop(_1,Ast.Or,_3)) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (Binop(_1,Or,_3)) ) in
             _menhir_goto_inclusive_or_expression _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -886,7 +886,7 @@ and _menhir_goto_option_void_return_statement_ : _menhir_env -> 'ttv_tail -> _me
         let _startpos = _startpos__1_ in
         let _v : (Ast.constructor_decl) =      ( let (id,formals) = _2 in 
        let (lvars,stms) = _4 in
-       let retstm       = make_retstm _startpos Ast.VoidReturn in
+       let retstm       = make_retstm _startpos VoidReturn in
        let body = make_body (formals,lvars,stms,retstm) in
        make_constructor (id,body) ) in
         let _menhir_stack = (_menhir_stack, _v) in
@@ -1047,7 +1047,7 @@ and _menhir_run216 : _menhir_env -> 'ttv_tail * _menhir_state * Lexing.position 
     let _startpos__2_ = _startpos in
     let (_menhir_stack, _menhir_s, _startpos__1_) = _menhir_stack in
     let _startpos = _startpos__1_ in
-    let _v : (Ast.return_stm) =      ( make_retstm _startpos Ast.VoidReturn ) in
+    let _v : (Ast.return_stm) =      ( make_retstm _startpos VoidReturn ) in
     match _menhir_s with
     | MenhirState214 ->
         let _menhir_stack = Obj.magic _menhir_stack in
@@ -1079,7 +1079,7 @@ and _menhir_goto_and_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> (
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((_menhir_stack, _menhir_s, _1, _startpos__1_), _, _3, _startpos__3_) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Binop(_1,Ast.Xor,_3)) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (Binop(_1,Xor,_3)) ) in
             _menhir_goto_exclusive_or_expression _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -1204,7 +1204,7 @@ and _menhir_goto_list_statement_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
             let _1 = _v in
             let _startpos__1_ = _startpos in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.stm) =      ( make_stm _startpos (Ast.Block _1) ) in
+            let _v : (Ast.stm) =      ( make_stm _startpos (Block _1) ) in
             _menhir_goto_statement_without_trailing_substatement _menhir_env _menhir_stack _menhir_s _v
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -1328,7 +1328,7 @@ and _menhir_goto_equality_expression : _menhir_env -> 'ttv_tail -> _menhir_state
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((_menhir_stack, _menhir_s, _1, _startpos__1_), _, _3, _startpos__3_) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Binop(_1,Ast.And,_3)) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (Binop(_1,And,_3)) ) in
             _menhir_goto_and_expression _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -1484,7 +1484,7 @@ and _menhir_goto_statement : _menhir_env -> 'ttv_tail -> _menhir_state -> (Ast.s
         let _menhir_stack = Obj.magic _menhir_stack in
         let (((((_menhir_stack, _menhir_s, _startpos__1_), _startpos__2_), _, _3), _, _5), _, _7) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.stm) =      ( make_stm _startpos (Ast.IfThenElse(_3,_5,_7)) ) in
+        let _v : (Ast.stm) =      ( make_stm _startpos (IfThenElse(_3,_5,_7)) ) in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _1 = _v in
@@ -1495,7 +1495,7 @@ and _menhir_goto_statement : _menhir_env -> 'ttv_tail -> _menhir_state -> (Ast.s
         let _menhir_stack = Obj.magic _menhir_stack in
         let ((((_menhir_stack, _menhir_s, _startpos__1_), _startpos__2_), _, _3), _, _5) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.stm) =      ( make_stm _startpos (Ast.IfThen(_3,_5)) ) in
+        let _v : (Ast.stm) =      ( make_stm _startpos (IfThen(_3,_5)) ) in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _1 = _v in
@@ -1506,7 +1506,7 @@ and _menhir_goto_statement : _menhir_env -> 'ttv_tail -> _menhir_state -> (Ast.s
         let _menhir_stack = Obj.magic _menhir_stack in
         let ((((_menhir_stack, _menhir_s, _startpos__1_), _startpos__2_), _, _3), _, _5) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.stm) =      ( make_stm _startpos (Ast.While(_3,_5)) ) in
+        let _v : (Ast.stm) =      ( make_stm _startpos (While(_3,_5)) ) in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _1 = _v in
@@ -1724,12 +1724,12 @@ and _menhir_run161 : _menhir_env -> 'ttv_tail -> _menhir_state -> Lexing.positio
     let _menhir_stack = Obj.magic _menhir_stack in
     let _startpos__1_ = _startpos in
     let _startpos = _startpos__1_ in
-    let _v : (Ast.stm) =      ( make_stm _startpos (Ast.Empty) ) in
+    let _v : (Ast.stm) =      ( make_stm _startpos (Empty) ) in
     let _menhir_stack = Obj.magic _menhir_stack in
     let _menhir_stack = Obj.magic _menhir_stack in
     let _startpos__1_ = _startpos in
     let _startpos = _startpos__1_ in
-    let _v : (Ast.stm) =      ( make_stm _startpos (Ast.Empty) ) in
+    let _v : (Ast.stm) =      ( make_stm _startpos (Empty) ) in
     _menhir_goto_statement_without_trailing_substatement _menhir_env _menhir_stack _menhir_s _v
 
 and _menhir_run162 : _menhir_env -> 'ttv_tail -> _menhir_state -> Lexing.position -> 'ttv_return =
@@ -1915,7 +1915,7 @@ and _menhir_goto_relational_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((_menhir_stack, _menhir_s, _1, _startpos__1_), _, _3, _startpos__3_) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Binop(_1,Ast.Ne,_3)) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (Binop(_1,Ne,_3)) ) in
             _menhir_goto_equality_expression _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -1940,7 +1940,7 @@ and _menhir_goto_relational_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((_menhir_stack, _menhir_s, _1, _startpos__1_), _, _3, _startpos__3_) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Binop(_1,Ast.Eq,_3)) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (Binop(_1,Eq,_3)) ) in
             _menhir_goto_equality_expression _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -2265,7 +2265,7 @@ and _menhir_goto_statement_no_short_if : _menhir_env -> 'ttv_tail -> _menhir_sta
         let _menhir_stack = Obj.magic _menhir_stack in
         let (((((_menhir_stack, _menhir_s, _startpos__1_), _startpos__2_), _, _3), _, _5), _, _7) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.stm) =      ( make_stm _startpos (Ast.IfThenElse(_3,_5,_7)) ) in
+        let _v : (Ast.stm) =      ( make_stm _startpos (IfThenElse(_3,_5,_7)) ) in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _1 = _v in
@@ -2276,7 +2276,7 @@ and _menhir_goto_statement_no_short_if : _menhir_env -> 'ttv_tail -> _menhir_sta
         let _menhir_stack = Obj.magic _menhir_stack in
         let ((((_menhir_stack, _menhir_s, _startpos__1_), _startpos__2_), _, _3), _, _5) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.stm) =      ( make_stm _startpos (Ast.While(_3,_5)) ) in
+        let _v : (Ast.stm) =      ( make_stm _startpos (While(_3,_5)) ) in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _1 = _v in
@@ -2447,7 +2447,7 @@ and _menhir_goto_additive_expression : _menhir_env -> 'ttv_tail -> _menhir_state
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((_menhir_stack, _menhir_s, _1, _startpos__1_), _, _3, _startpos__3_) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Binop(_1,Ast.Le,_3)) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (Binop(_1,Le,_3)) ) in
             _menhir_goto_relational_expression _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -2468,7 +2468,7 @@ and _menhir_goto_additive_expression : _menhir_env -> 'ttv_tail -> _menhir_state
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((_menhir_stack, _menhir_s, _1, _startpos__1_), _, _3, _startpos__3_) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Binop(_1,Ast.Lt,_3)) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (Binop(_1,Lt,_3)) ) in
             _menhir_goto_relational_expression _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -2489,7 +2489,7 @@ and _menhir_goto_additive_expression : _menhir_env -> 'ttv_tail -> _menhir_state
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((_menhir_stack, _menhir_s, _1, _startpos__1_), _, _3, _startpos__3_) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Binop(_1,Ast.Ge,_3)) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (Binop(_1,Ge,_3)) ) in
             _menhir_goto_relational_expression _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -2510,7 +2510,7 @@ and _menhir_goto_additive_expression : _menhir_env -> 'ttv_tail -> _menhir_state
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((_menhir_stack, _menhir_s, _1, _startpos__1_), _, _3, _startpos__3_) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Binop(_1,Ast.Gt,_3)) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (Binop(_1,Gt,_3)) ) in
             _menhir_goto_relational_expression _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -2584,7 +2584,7 @@ and _menhir_goto_multiplicative_expression : _menhir_env -> 'ttv_tail -> _menhir
             let _menhir_stack = Obj.magic _menhir_stack in
             let (((_menhir_stack, _menhir_s, _1, _startpos__1_), _startpos__2_), _, _3, _startpos__3_) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Binop(_1,Ast.Minus,_3)) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (Binop(_1,Minus,_3)) ) in
             _menhir_goto_additive_expression _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -2607,7 +2607,7 @@ and _menhir_goto_multiplicative_expression : _menhir_env -> 'ttv_tail -> _menhir
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((_menhir_stack, _menhir_s, _1, _startpos__1_), _, _3, _startpos__3_) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Binop(_1,Ast.Add,_3)) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (Binop(_1,Add,_3)) ) in
             _menhir_goto_additive_expression _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -2679,7 +2679,7 @@ and _menhir_goto_class_body : _menhir_env -> 'ttv_tail -> (Ast.field_decl list *
         let _menhir_stack = Obj.magic _menhir_stack in
         let (_menhir_stack, _1, _startpos__1_) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.class_decl) =         ( make_source_file _startpos _1 ) in
+        let _v : (class_decl) =         ( make_source_file _startpos _1 ) in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _1 = _v in
@@ -2699,7 +2699,7 @@ and _menhir_goto_unary_expression_not_integer : _menhir_env -> 'ttv_tail -> _men
         let _2 = _v in
         let (_menhir_stack, _menhir_s, _startpos__1_) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Unop(Ast.Negate,_2)) ) in
+        let _v : (Ast.exp) =      ( make_exp _startpos (Unop(Negate,_2)) ) in
         _menhir_goto_unary_expression_not_integer _menhir_env _menhir_stack _menhir_s _v
     | MenhirState29 ->
         let _menhir_stack = Obj.magic _menhir_stack in
@@ -2707,7 +2707,7 @@ and _menhir_goto_unary_expression_not_integer : _menhir_env -> 'ttv_tail -> _men
         let _2 = _v in
         let (_menhir_stack, _menhir_s, _startpos__1_) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Unop(Ast.Negate,_2)) ) in
+        let _v : (Ast.exp) =      ( make_exp _startpos (Unop(Negate,_2)) ) in
         _menhir_goto_unary_expression _menhir_env _menhir_stack _menhir_s _v _startpos
     | _ ->
         _menhir_fail ()
@@ -2804,7 +2804,7 @@ and _menhir_goto_unary_expression : _menhir_env -> 'ttv_tail -> _menhir_state ->
         let _startpos__2_ = _startpos in
         let (_menhir_stack, _menhir_s, _startpos__1_) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Unop(Ast.Complement,_2)) ) in
+        let _v : (Ast.exp) =      ( make_exp _startpos (Unop(Complement,_2)) ) in
         _menhir_goto_unary_expression _menhir_env _menhir_stack _menhir_s _v _startpos
     | MenhirState253 | MenhirState176 | MenhirState172 | MenhirState168 | MenhirState163 | MenhirState157 | MenhirState12 | MenhirState17 | MenhirState23 | MenhirState28 | MenhirState33 | MenhirState34 | MenhirState100 | MenhirState63 | MenhirState89 | MenhirState86 | MenhirState83 | MenhirState81 | MenhirState79 | MenhirState77 | MenhirState75 | MenhirState73 | MenhirState71 | MenhirState69 | MenhirState64 | MenhirState45 | MenhirState42 ->
         let _menhir_stack = Obj.magic _menhir_stack in
@@ -2821,7 +2821,7 @@ and _menhir_goto_unary_expression : _menhir_env -> 'ttv_tail -> _menhir_state ->
         let _startpos__3_ = _startpos in
         let (_menhir_stack, _menhir_s, _1, _startpos__1_) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Binop(_1,Ast.Times,_3)) ) in
+        let _v : (Ast.exp) =      ( make_exp _startpos (Binop(_1,Times,_3)) ) in
         _menhir_goto_multiplicative_expression _menhir_env _menhir_stack _menhir_s _v _startpos
     | MenhirState58 ->
         let _menhir_stack = Obj.magic _menhir_stack in
@@ -2830,7 +2830,7 @@ and _menhir_goto_unary_expression : _menhir_env -> 'ttv_tail -> _menhir_state ->
         let _startpos__3_ = _startpos in
         let (_menhir_stack, _menhir_s, _1, _startpos__1_) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Binop(_1,Ast.Modulo,_3)) ) in
+        let _v : (Ast.exp) =      ( make_exp _startpos (Binop(_1,Modulo,_3)) ) in
         _menhir_goto_multiplicative_expression _menhir_env _menhir_stack _menhir_s _v _startpos
     | MenhirState60 ->
         let _menhir_stack = Obj.magic _menhir_stack in
@@ -2839,7 +2839,7 @@ and _menhir_goto_unary_expression : _menhir_env -> 'ttv_tail -> _menhir_state ->
         let _startpos__3_ = _startpos in
         let (_menhir_stack, _menhir_s, _1, _startpos__1_) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Binop(_1,Ast.Divide,_3)) ) in
+        let _v : (Ast.exp) =      ( make_exp _startpos (Binop(_1,Divide,_3)) ) in
         _menhir_goto_multiplicative_expression _menhir_env _menhir_stack _menhir_s _v _startpos
     | MenhirState66 ->
         let _menhir_stack = Obj.magic _menhir_stack in
@@ -2848,8 +2848,8 @@ and _menhir_goto_unary_expression : _menhir_env -> 'ttv_tail -> _menhir_state ->
         let _startpos__6_ = _startpos in
         let (((_menhir_stack, _menhir_s, _1, _startpos__1_), _, _startpos__3_), _) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.exp) =      ( let unexp = make_exp _startpos (Ast.Unop(Ast.CharToString,_6)) in
-       make_exp _startpos (Ast.Binop(_1,Ast.Concat,unexp)) ) in
+        let _v : (Ast.exp) =      ( let unexp = make_exp _startpos (Unop(CharToString,_6)) in
+       make_exp _startpos (Binop(_1,Concat,unexp)) ) in
         _menhir_goto_additive_expression _menhir_env _menhir_stack _menhir_s _v _startpos
     | MenhirState107 ->
         let _menhir_stack = Obj.magic _menhir_stack in
@@ -2858,7 +2858,7 @@ and _menhir_goto_unary_expression : _menhir_env -> 'ttv_tail -> _menhir_state ->
         let _startpos__2_ = _startpos in
         let (_menhir_stack, _menhir_s, _startpos__1_) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Unop(Ast.Complement,_2)) ) in
+        let _v : (Ast.exp) =      ( make_exp _startpos (Unop(Complement,_2)) ) in
         _menhir_goto_unary_expression_not_integer _menhir_env _menhir_stack _menhir_s _v
     | _ ->
         _menhir_fail ()
@@ -2878,7 +2878,7 @@ and _menhir_goto_statement_expression : _menhir_env -> 'ttv_tail -> _menhir_stat
         let _startpos__2_ = _startpos in
         let (_menhir_stack, _menhir_s, _1, _startpos__1_) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.stm) =      ( make_stm _startpos (Ast.Exp _1) ) in
+        let _v : (Ast.stm) =      ( make_stm _startpos (Exp _1) ) in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _1 = _v in
@@ -2936,7 +2936,7 @@ and _menhir_reduce57 : _menhir_env -> 'ttv_tail * _menhir_state * (bool) * Lexin
   fun _menhir_env _menhir_stack ->
     let (_menhir_stack, _menhir_s, _1, _startpos__1_) = _menhir_stack in
     let _startpos = _startpos__1_ in
-    let _v : (Ast.exp) =      ( make_exp _startpos (Ast.BooleanConst _1) ) in
+    let _v : (Ast.exp) =      ( make_exp _startpos (BooleanConst _1) ) in
     _menhir_goto_literal_not_integer _menhir_env _menhir_stack _menhir_s _v _startpos
 
 and _menhir_run151 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
@@ -3055,9 +3055,9 @@ and _menhir_goto_list_method_declaration_ : _menhir_env -> 'ttv_tail -> _menhir_
             let ((((((((((((((_menhir_stack, _startpos__1_), _, _2), _3), _, _startpos__4_), _), _startpos__6_), _), _, _), _startpos__10_), _startpos__11_), _, _12, _startpos__12_), _startpos__13_), _startpos__15_), _, _17) = _menhir_stack in
             let _startpos = _startpos__1_ in
             let _v : (Ast.field_decl list * Ast.constructor_decl * Ast.body option *
-  Ast.method_decl list) =      ( let new_exp = make_exp _startpos (Ast.New (_12,[])) in (*FIXME: pos?*)
-       let new_stm = make_stm _startpos (Ast.Exp new_exp) in (*FIXME: pos?*)
-       let new_retstm = make_retstm _startpos Ast.VoidReturn in(*FIXME: pos?*)
+  Ast.method_decl list) =      ( let new_exp = make_exp _startpos (New (_12,[])) in (*FIXME: pos?*)
+       let new_stm = make_stm _startpos (Exp new_exp) in (*FIXME: pos?*)
+       let new_retstm = make_retstm _startpos VoidReturn in(*FIXME: pos?*)
        let body = make_body ([],[],[new_stm],new_retstm) in
        (_2,_3,Some body,_17) ) in
             _menhir_goto_class_body _menhir_env _menhir_stack _v
@@ -3095,7 +3095,7 @@ and _menhir_run223 : _menhir_env -> 'ttv_tail -> _menhir_state -> Lexing.positio
     let _menhir_stack = Obj.magic _menhir_stack in
     let _startpos__1_ = _startpos in
     let _startpos = _startpos__1_ in
-    let _v : (Ast.typeexp) =      ( make_typeexp _startpos Ast.Void ) in
+    let _v : (Ast.typeexp) =      ( make_typeexp _startpos Void ) in
     _menhir_goto_typeexp_or_void _menhir_env _menhir_stack _menhir_s _v
 
 and _menhir_goto_primary_not_integer : _menhir_env -> 'ttv_tail -> _menhir_state -> (Ast.exp) -> 'ttv_return =
@@ -3144,14 +3144,14 @@ and _menhir_reduce83 : _menhir_env -> 'ttv_tail * _menhir_state * (Ast.lvalue) *
   fun _menhir_env _menhir_stack ->
     let (_menhir_stack, _menhir_s, _1, _startpos__1_) = _menhir_stack in
     let _startpos = _startpos__1_ in
-    let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Lvalue _1) ) in
+    let _v : (Ast.exp) =      ( make_exp _startpos (Lvalue _1) ) in
     _menhir_goto_primary _menhir_env _menhir_stack _menhir_s _v _startpos
 
 and _menhir_reduce94 : _menhir_env -> 'ttv_tail * _menhir_state * (Ast.lvalue) * Lexing.position -> 'ttv_return =
   fun _menhir_env _menhir_stack ->
     let (_menhir_stack, _menhir_s, _1, _startpos__1_) = _menhir_stack in
     let _startpos = _startpos__1_ in
-    let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Lvalue _1) ) in
+    let _v : (Ast.exp) =      ( make_exp _startpos (Lvalue _1) ) in
     _menhir_goto_primary_not_integer_not_this _menhir_env _menhir_stack _menhir_s _v _startpos
 
 and _menhir_goto_argument_list : _menhir_env -> 'ttv_tail -> _menhir_state -> (Ast.exp list) -> 'ttv_return =
@@ -3170,7 +3170,7 @@ and _menhir_goto_argument_list : _menhir_env -> 'ttv_tail -> _menhir_state -> (A
             let ((((_menhir_stack, _menhir_s, _1, _startpos__1_), _3, _startpos__3_), _startpos__4_), _, _5) = _menhir_stack in
             let _startpos = _startpos__1_ in
             let _v : (Ast.exp) =      ( let id = make_identifier _startpos _3 in
-       make_exp _startpos (Ast.Invoke(_1,id,_5)) ) in
+       make_exp _startpos (Invoke(_1,id,_5)) ) in
             _menhir_goto_method_invocation _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -3189,7 +3189,7 @@ and _menhir_goto_argument_list : _menhir_env -> 'ttv_tail -> _menhir_state -> (A
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((((_menhir_stack, _menhir_s, _startpos__1_), _, _2, _startpos__2_), _startpos__3_), _, _4) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.New(_2,_4)) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (New(_2,_4)) ) in
             let _menhir_stack = (_menhir_stack, _menhir_s, _v, _startpos) in
             (match _menhir_s with
             | MenhirState253 | MenhirState157 | MenhirState168 | MenhirState172 | MenhirState176 | MenhirState163 | MenhirState12 | MenhirState17 | MenhirState23 | MenhirState28 | MenhirState107 | MenhirState33 | MenhirState34 | MenhirState37 | MenhirState100 | MenhirState42 | MenhirState63 | MenhirState64 | MenhirState69 | MenhirState71 | MenhirState89 | MenhirState73 | MenhirState86 | MenhirState75 | MenhirState83 | MenhirState81 | MenhirState79 | MenhirState77 | MenhirState66 | MenhirState45 | MenhirState60 | MenhirState58 | MenhirState50 ->
@@ -3267,9 +3267,9 @@ and _menhir_goto_argument_list : _menhir_env -> 'ttv_tail -> _menhir_state -> (A
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((((_menhir_stack, _menhir_s, _startpos__1_), _, _3, _startpos__3_), _startpos__4_), _, _5) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( let this = make_exp _startpos Ast.This in
+            let _v : (Ast.exp) =      ( let this = make_exp _startpos This in
        let id = make_identifier _startpos _3 in
-       make_exp _startpos (Ast.Invoke(this,id,_5)) ) in
+       make_exp _startpos (Invoke(this,id,_5)) ) in
             _menhir_goto_method_invocation _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -3420,14 +3420,14 @@ and _menhir_reduce58 : _menhir_env -> 'ttv_tail * _menhir_state * (string) * Lex
   fun _menhir_env _menhir_stack ->
     let (_menhir_stack, _menhir_s, _1, _startpos__1_) = _menhir_stack in
     let _startpos = _startpos__1_ in
-    let _v : (Ast.exp) =      ( make_exp _startpos (Ast.StringConst _1) ) in
+    let _v : (Ast.exp) =      ( make_exp _startpos (StringConst _1) ) in
     _menhir_goto_literal_not_integer _menhir_env _menhir_stack _menhir_s _v _startpos
 
 and _menhir_reduce59 : _menhir_env -> 'ttv_tail * _menhir_state * (unit) * Lexing.position -> 'ttv_return =
   fun _menhir_env _menhir_stack ->
     let (_menhir_stack, _menhir_s, _, _startpos__1_) = _menhir_stack in
     let _startpos = _startpos__1_ in
-    let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Null) ) in
+    let _v : (Ast.exp) =      ( make_exp _startpos (Null) ) in
     _menhir_goto_literal_not_integer _menhir_env _menhir_stack _menhir_s _v _startpos
 
 and _menhir_run30 : _menhir_env -> 'ttv_tail -> _menhir_state -> Lexing.position -> 'ttv_return =
@@ -3442,7 +3442,7 @@ and _menhir_run30 : _menhir_env -> 'ttv_tail -> _menhir_state -> Lexing.position
         let _menhir_stack = Obj.magic _menhir_stack in
         let (_menhir_stack, _menhir_s, _startpos__1_) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.exp) =      ( make_exp _startpos (Ast.This) ) in
+        let _v : (Ast.exp) =      ( make_exp _startpos (This) ) in
         _menhir_goto_primary_not_integer _menhir_env _menhir_stack _menhir_s _v
     | _ ->
         assert (not _menhir_env._menhir_error);
@@ -3533,7 +3533,7 @@ and _menhir_reduce56 : _menhir_env -> ('ttv_tail * _menhir_state * Lexing.positi
     let _startpos = _startpos__1_ in
     let _v : (Ast.exp) =       ( try
           let i = string_to_int32 ("-" ^ _2) in
-          make_exp _startpos (Ast.IntConst i)
+          make_exp _startpos (IntConst i)
         with Failure msg -> 
           Error.error _startpos ("Integer value out of range: " ^ msg) ) in
     _menhir_goto_literal_not_integer _menhir_env _menhir_stack _menhir_s _v _startpos
@@ -3598,7 +3598,7 @@ and _menhir_goto_boolean_literal : _menhir_env -> 'ttv_tail -> _menhir_state -> 
             let _menhir_stack = Obj.magic _menhir_stack in
             let (_menhir_stack, _menhir_s, _1, _startpos__1_) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.BooleanConst _1) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (BooleanConst _1) ) in
             _menhir_goto_literal _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -3863,7 +3863,7 @@ and _menhir_reduce100 : _menhir_env -> 'ttv_tail * _menhir_state * (Ast.identifi
   fun _menhir_env _menhir_stack ->
     let (_menhir_stack, _menhir_s, _1, _startpos__1_) = _menhir_stack in
     let _startpos = _startpos__1_ in
-    let _v : (Ast.typeexp) =      ( make_typeexp _startpos (Ast.Class _1) ) in
+    let _v : (Ast.typeexp) =      ( make_typeexp _startpos (Class _1) ) in
     _menhir_goto_reference_type _menhir_env _menhir_stack _menhir_s _v _startpos
 
 and _menhir_goto_left_hand_side : _menhir_env -> 'ttv_tail -> _menhir_state -> (Ast.lvalue) -> Lexing.position -> 'ttv_return =
@@ -3913,7 +3913,7 @@ and _menhir_goto_left_hand_side : _menhir_env -> 'ttv_tail -> _menhir_state -> (
             let _menhir_stack = Obj.magic _menhir_stack in
             let (_menhir_stack, _menhir_s, _1, _startpos__1_) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Lvalue _1) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (Lvalue _1) ) in
             _menhir_goto_primary_not_integer _menhir_env _menhir_stack _menhir_s _v
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -3943,7 +3943,7 @@ and _menhir_reduce43 : _menhir_env -> 'ttv_tail * _menhir_state * (Ast.identifie
   fun _menhir_env _menhir_stack ->
     let (_menhir_stack, _menhir_s, _1, _startpos__1_) = _menhir_stack in
     let _startpos = _startpos__1_ in
-    let _v : (Ast.lvalue) =      ( make_lvalue _startpos (Ast.Local _1) ) in
+    let _v : (Ast.lvalue) =      ( make_lvalue _startpos (Local _1) ) in
     _menhir_goto_left_hand_side _menhir_env _menhir_stack _menhir_s _v _startpos
 
 and _menhir_reduce7 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
@@ -3972,7 +3972,7 @@ and _menhir_run14 : _menhir_env -> 'ttv_tail -> _menhir_state -> Lexing.position
         let _menhir_stack = Obj.magic _menhir_stack in
         let (_menhir_stack, _menhir_s, _startpos__1_) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.exp) =      ( make_exp _startpos (Ast.This) ) in
+        let _v : (Ast.exp) =      ( make_exp _startpos (This) ) in
         _menhir_goto_primary _menhir_env _menhir_stack _menhir_s _v _startpos
     | _ ->
         assert (not _menhir_env._menhir_error);
@@ -4020,7 +4020,7 @@ and _menhir_run18 : _menhir_env -> 'ttv_tail -> _menhir_state -> Lexing.position
                             let _menhir_stack = Obj.magic _menhir_stack in
                             let ((_menhir_stack, _menhir_s, _startpos__1_), _startpos__6_) = _menhir_stack in
                             let _startpos = _startpos__1_ in
-                            let _v : (Ast.exp) =      ( make_exp _startpos Ast.Read ) in
+                            let _v : (Ast.exp) =      ( make_exp _startpos Read ) in
                             _menhir_goto_method_invocation _menhir_env _menhir_stack _menhir_s _v _startpos
                         | _ ->
                             assert (not _menhir_env._menhir_error);
@@ -4139,7 +4139,7 @@ and _menhir_run24 : _menhir_env -> 'ttv_tail -> _menhir_state -> (string) -> Lex
         let _menhir_stack = Obj.magic _menhir_stack in
         let (_menhir_stack, _menhir_s, _1, _startpos__1_) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.exp) =      ( make_exp _startpos (Ast.StringConst _1) ) in
+        let _v : (Ast.exp) =      ( make_exp _startpos (StringConst _1) ) in
         _menhir_goto_literal _menhir_env _menhir_stack _menhir_s _v _startpos
     | _ ->
         assert (not _menhir_env._menhir_error);
@@ -4168,7 +4168,7 @@ and _menhir_run25 : _menhir_env -> 'ttv_tail -> _menhir_state -> Lexing.position
             let _menhir_stack = Obj.magic _menhir_stack in
             let (_menhir_stack, _menhir_s, _, _startpos__1_) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.exp) =      ( make_exp _startpos (Ast.Null) ) in
+            let _v : (Ast.exp) =      ( make_exp _startpos (Null) ) in
             _menhir_goto_literal _menhir_env _menhir_stack _menhir_s _v _startpos
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -4223,7 +4223,7 @@ and _menhir_run29 : _menhir_env -> 'ttv_tail -> _menhir_state -> Lexing.position
             let _startpos = _startpos__1_ in
             let _v : (Ast.exp) =       ( try
           let i = string_to_int32 ("-" ^ _2) in
-          make_exp _startpos (Ast.IntConst i)
+          make_exp _startpos (IntConst i)
         with Failure msg -> 
           Error.error _startpos ("Integer value out of range: " ^ msg) ) in
             _menhir_goto_literal _menhir_env _menhir_stack _menhir_s _v _startpos
@@ -4298,7 +4298,7 @@ and _menhir_run35 : _menhir_env -> 'ttv_tail -> _menhir_state -> (string) -> Lex
     let _startpos = _startpos__1_ in
     let _v : (Ast.exp) =       ( try
           let i = string_to_int32 _1 in
-          make_exp _startpos (Ast.IntConst i)
+          make_exp _startpos (IntConst i)
         with Failure msg -> 
           Error.error _startpos ("Integer value out of range: " ^ msg) ) in
     _menhir_goto_literal _menhir_env _menhir_stack _menhir_s _v _startpos
@@ -4533,7 +4533,7 @@ and _menhir_reduce75 : _menhir_env -> 'ttv_tail * _menhir_state * (string) * Lex
         let _menhir_stack = Obj.magic _menhir_stack in
         let ((_menhir_stack, _menhir_s, _startpos__1_), _, _3, _startpos__3_) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.lvalue) =      ( make_lvalue _startpos (Ast.Field _3) ) in
+        let _v : (Ast.lvalue) =      ( make_lvalue _startpos (Field _3) ) in
         _menhir_goto_left_hand_side _menhir_env _menhir_stack _menhir_s _v _startpos
     | MenhirState222 | MenhirState242 | MenhirState245 | MenhirState145 | MenhirState141 | MenhirState5 ->
         let _menhir_stack = Obj.magic _menhir_stack in
@@ -4702,7 +4702,7 @@ and _menhir_run6 : _menhir_env -> 'ttv_tail -> _menhir_state -> Lexing.position 
     let _menhir_stack = Obj.magic _menhir_stack in
     let _startpos__1_ = _startpos in
     let _startpos = _startpos__1_ in
-    let _v : (Ast.typeexp) =      ( make_typeexp _startpos Ast.String ) in
+    let _v : (Ast.typeexp) =      ( make_typeexp _startpos String ) in
     _menhir_goto_reference_type _menhir_env _menhir_stack _menhir_s _v _startpos
 
 and _menhir_run7 : _menhir_env -> 'ttv_tail -> _menhir_state -> Lexing.position -> 'ttv_return =
@@ -4711,7 +4711,7 @@ and _menhir_run7 : _menhir_env -> 'ttv_tail -> _menhir_state -> Lexing.position 
     let _menhir_stack = Obj.magic _menhir_stack in
     let _startpos__1_ = _startpos in
     let _startpos = _startpos__1_ in
-    let _v : (Ast.typeexp) =      ( make_typeexp _startpos Ast.Int ) in
+    let _v : (Ast.typeexp) =      ( make_typeexp _startpos Int ) in
     _menhir_goto_primitive_type _menhir_env _menhir_stack _menhir_s _v _startpos
 
 and _menhir_run8 : _menhir_env -> 'ttv_tail -> _menhir_state -> (string) -> Lexing.position -> 'ttv_return =
@@ -4726,7 +4726,7 @@ and _menhir_run9 : _menhir_env -> 'ttv_tail -> _menhir_state -> Lexing.position 
     let _menhir_stack = Obj.magic _menhir_stack in
     let _startpos__1_ = _startpos in
     let _startpos = _startpos__1_ in
-    let _v : (Ast.typeexp) =      ( make_typeexp _startpos Ast.Boolean ) in
+    let _v : (Ast.typeexp) =      ( make_typeexp _startpos Boolean ) in
     _menhir_goto_primitive_type _menhir_env _menhir_stack _menhir_s _v _startpos
 
 and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
@@ -5043,7 +5043,7 @@ and _menhir_discard : _menhir_env -> _menhir_env =
       _menhir_error = false;
       }
 
-and goal : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast.class_decl) =
+and goal : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (class_decl) =
   fun lexer lexbuf ->
     let _menhir_env = let _tok = Obj.magic () in
     {

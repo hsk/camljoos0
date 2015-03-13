@@ -6,25 +6,25 @@ let parse_file file_name =
     let () = print_endline ("Opening \"" ^ file_name ^ "\"") in
     let lexbuf = Lexing.from_channel inch in
     let lcp = lexbuf.Lexing.lex_curr_p in
-    let () = lexbuf.Lexing.lex_curr_p <- { lcp with Lexing.pos_fname = file_name }
-    in try
-         let sf = Parser.goal Lexer.token lexbuf in
-         close_in inch;
-         flush stdout;
-         sf
-      with
-        | End_of_file ->
-          let curr_pos = lexbuf.Lexing.lex_curr_p in
-          close_in inch;
-          Error.error curr_pos "Parse error"
-        | Parser.Error ->
-          let curr_pos = lexbuf.Lexing.lex_curr_p in
-          close_in inch;
-          Error.error curr_pos "Parse error"
-        | Failure msg ->
-          let curr_pos = lexbuf.Lexing.lex_curr_p in
-          close_in inch;
-          Error.error curr_pos msg
+    let () = lexbuf.Lexing.lex_curr_p <- { lcp with Lexing.pos_fname = file_name } in
+    try
+      let sf = Parser.goal Lexer.token lexbuf in
+      close_in inch;
+      flush stdout;
+      sf
+    with
+    | End_of_file ->
+      let curr_pos = lexbuf.Lexing.lex_curr_p in
+      close_in inch;
+      Error.error curr_pos "Parse error"
+    | Parser.Error ->
+      let curr_pos = lexbuf.Lexing.lex_curr_p in
+      close_in inch;
+      Error.error curr_pos "Parse error"
+    | Failure msg ->
+      let curr_pos = lexbuf.Lexing.lex_curr_p in
+      close_in inch;
+      Error.error curr_pos msg
   with
     | End_of_file ->
       Error.error Lexing.dummy_pos "Parse error"
@@ -33,20 +33,19 @@ let parse_file file_name =
 
 let compile filenames =
   let apply phase ast msg =
-    begin
-      print_string "*** ";
-      print_endline msg;
-      let ast = phase ast in 
-      flush stdout;
-      ast
-    end in
+    print_string "*** ";
+    print_endline msg;
+    let ast = phase ast in 
+    flush stdout;
+    ast
+  in
   let () = print_endline "Applying phases:" in
   let prog = apply (List.map parse_file) filenames "parsing" in 
   let tenv = apply Env.env_program prog "environment building " in
-  let last = apply (Linking.link_program tenv) prog "linking/name resolving" in
-  let tast = apply (Typechecking.tcheck_program tenv) last "type checking" in
-  let cast = apply Constants.const_program tast "constant folding" in
-  let rast = apply Resource.res_program cast "resource analyzing" in
+  let last = apply (Link.link_program tenv) prog "linking/name resolving" in
+  let tast = apply (Typing.tcheck_program tenv) last "type checking" in
+  let cast = apply Consts.const_program tast "constant folding" in
+  let rast = apply Res.res_program cast "resource analyzing" in
   let cast = apply (Codegen.codegen_program tenv) rast "code generation" in
   let last = apply Limits.limit_program cast "limit analyzing and verification" in
   let ()   = apply Emit.emit_program last "code emitting" in

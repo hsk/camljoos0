@@ -80,9 +80,7 @@ type body =
       statements : stm list;
       return     : return_stm; }
 
-type constructor_decl =
-    { constructor_name : identifier;
-      constructor_body : body; }
+type constructor_decl = identifier * body
 
 type method_decl =
     { method_return_type : typeexp;
