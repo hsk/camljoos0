@@ -19,23 +19,22 @@ type typeexp = Types.typeexp
 type formal_param = typeexp * identifier * int (*NEW*)
 (*type local_decl   = typeexp * identifier (* * exp *) * int (*NEW*)*)
 
-type field_decl = typeexp * identifier (*field_init : exp option;*) * string
 
 type body =
     { formals    : formal_param list;
 (*    locals     : local_decl list; *)
       body       : Inst.instruction list; }
 
-type method_decl =
+type field_decl =
   | Method of typeexp * identifier * body * string
   | Main of body
   | Constructor of identifier * body * string
+  | Field of typeexp * identifier (*field_init : exp option;*) * string
 
 type class_decl =
-    { source_file_name     : string;
+    { class_file_name     : string;
       class_name           : identifier;
       class_fields         : field_decl list;
-      class_methods        : method_decl list;
       class_decl_signature : string (*NEW*) }
 
 type program = class_decl list
@@ -312,10 +311,6 @@ let codegen_local info (typ, id, exp, offset) =
   | Types.Null -> raise (Error.InternalCompilerError "Illegal type of local initializer")
 
 
-let codegen_field info {Res.field_type;field_name;field_signature} =
-  (field_type, field_name, field_signature)
-
-
 let codegen_body info {Res.locals;statements;return;formals} =
   let local_init = Utils.concat_list (codegen_local info) locals in
   let body       = codegen_stm_list info statements in
@@ -324,7 +319,7 @@ let codegen_body info {Res.locals;statements;return;formals} =
     body    = List.concat [local_init; body; return] }
 
 
-let codegen_method info = function
+let codegen_field info = function
   | Res.Method(return_type, name, body, signature) ->
     Method (return_type, name, codegen_body info  body,  signature)
   | Res.Constructor(name, body, signature) ->
@@ -333,35 +328,38 @@ let codegen_method info = function
       [Inst.Iaload 0; Inst.Iinvokespecial (codegen_method_sig_known "java/lang/Object/<init>()V" 0 0)]
     in
     let field_init =
-        List.fold_right (fun fdecl flist ->
-          match fdecl.Res.field_init with
-          | None -> flist
-          | Some e -> 
-            let ie = codegen_exp info e in
-            let fieldsig = fdecl.Res.field_signature
-                     ^ " " ^ (Types.typeexp_to_sig fdecl.Res.field_type) in
-            List.concat [[Inst.Iaload 0];
-                         ie;
-                         [Inst.Iputfield fieldsig];
-                         flist]
+        List.fold_right (fun field flist ->
+          match field with
+          | Res.Field(ty,name,init,signature) ->
+            begin match init with
+            | None -> flist
+            | Some e -> 
+              let ie = codegen_exp info e in
+              let fieldsig = signature ^ " " ^ (Types.typeexp_to_sig ty) in
+              List.concat [[Inst.Iaload 0];
+                           ie;
+                           [Inst.Iputfield fieldsig];
+                           flist]
+            end
+          | _ -> flist
         ) info.nonstatic_fields []
     in
     let insts = List.concat [supercall; field_init; fab.body] in
     Constructor (name, { fab with body = insts }, signature)
   | Res.Main (body) -> Main (codegen_body info body)
+  | Res.Field (ty, name, init, signature) -> Field(ty, name, signature)
 
 let codegen_program tenv prog =
-  List.map (fun {Res.class_name;class_fields;class_methods;class_decl_signature;source_file_name} ->
+  List.map (fun {Res.class_name;class_fields;class_decl_signature;class_file_name} ->
     let class_type = 
       Env.lookup_env tenv "class" class_name.Ast.identifier class_name.Ast.identifier_pos in
     let info    = { tenv             = tenv;
                     class_type       = class_type;
                     nonstatic_fields = class_fields } in
     { 
-      source_file_name     = source_file_name;
+      class_file_name     = class_file_name;
       class_name           = class_name;
       class_fields         = List.map (codegen_field info) class_fields;
-      class_methods        = List.map (codegen_method info) class_methods;
       class_decl_signature = class_decl_signature; }
   ) prog
 

@@ -17,19 +17,13 @@ let output_newline ch =
 let make_sig method_name fullsig =
   method_name ^ (Str.string_after fullsig (String.index fullsig '('))
 
-
-let emit_field ch (field_type,{Ast.identifier},_) =
-  let field_type = Types.typeexp_to_sig field_type in
-  output_line ch (".field protected " ^ identifier ^ " " ^ field_type)
-
-
 let emit_body ch {max_stack;max_locals;body} = 
   output_line ch (".limit stack " ^ (string_of_int max_stack));
   output_line ch (".limit locals " ^ (string_of_int max_locals));
   List.iter (fun inst -> output_line ch (Inst.to_asm inst)) body
 
 
-let emit_method ch = function
+let emit_field ch = function
   | Constructor (name, body, signature) ->
     let initsig = make_sig "<init>" signature in (* chop off full sig appropriately *)
     output_newline ch;
@@ -54,18 +48,23 @@ let emit_method ch = function
       emit_body ch body;
       output_line ch ".end method"
 
+  | Field (field_type,{Ast.identifier},_) ->
+      let field_type = Types.typeexp_to_sig field_type in
+      output_line ch (".field protected " ^ identifier ^ " " ^ field_type)
+
 
 let emit_program prog =
-  List.iter (fun ({source_file_name;class_name;class_fields;class_methods}) ->
-    let file_name = (Filename.chop_extension source_file_name) ^ ".j" in
+  List.iter (fun ({class_file_name;class_name;class_fields}) ->
+    let file_name = (Filename.chop_extension class_file_name) ^ ".j" in
     try
       let ch = open_out file_name in
-      output_line ch (".source " ^ (Filename.basename source_file_name));
+      output_line ch (".source " ^ (Filename.basename class_file_name));
       output_line ch (".class public " ^ (class_name.Ast.identifier));
       output_line ch (".super java/lang/Object");
 
-      List.iter (emit_field ch) class_fields;
-      List.iter (emit_method ch) class_methods;
+      let (fields, methods) = List.partition (function Field _ -> true | _ -> false) class_fields in
+      List.iter (emit_field ch) fields;
+      List.iter (emit_field ch) methods;
 
       close_out ch
     with Sys_error msg ->

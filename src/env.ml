@@ -30,14 +30,16 @@ let env_local lenv (typ, id, _) =
   env_formal_param lenv (typ, id)
 
 
-let env_field fenv {field_name;field_type} =
-  let fieldname = field_name.identifier in
-  if M.mem fieldname fenv then 
-    let pos = field_name.identifier_pos in
-    Error.error pos ("The field '" ^ fieldname ^ "' is already defined.") else
-  let field = { Types.field_type = env_typeexp field_type;
-                Types.field_name = fieldname; } in
-  (field, M.add fieldname field fenv)
+let env_field menv = function
+  | Field(field_type, field_name, _) ->
+    let fieldname = field_name.identifier in
+    if M.mem fieldname menv then 
+      let pos = field_name.identifier_pos in
+      Error.error pos ("The field '" ^ fieldname ^ "' is already defined.") else
+    let field = { Types.field_type = env_typeexp field_type;
+                  Types.field_name = fieldname; } in
+    (field, M.add fieldname field menv)
+  | _ -> assert false
 
 
 let env_body {formals;locals} =
@@ -46,34 +48,38 @@ let env_body {formals;locals} =
   ftypes
 
 
-let env_constructor (Constructor(name, body)) = (name.identifier, env_body body)
+let env_constructor = function
+  | Constructor(name, body) -> (name.identifier, env_body body)
+  | _ -> assert false
 
-
-let env_method menv (Method(method_return_type,method_name,method_body)) =
-  let methodname = method_name.identifier in
-  if M.mem methodname menv then 
-    let pos = method_name.identifier_pos in
-    Error.error pos ("The method '" ^ methodname ^ "' is already defined.") else
-  let mdecl   = { Types.method_result  = env_typeexp method_return_type;
-                  Types.method_name    = methodname;
-                  Types.method_formals = env_body method_body; } in
-  (mdecl, M.add methodname mdecl menv)
+let env_method menv = function
+  | Method(method_return_type,method_name,method_body) ->
+    let methodname = method_name.identifier in
+    if M.mem methodname menv then 
+      let pos = method_name.identifier_pos in
+      Error.error pos ("The method '" ^ methodname ^ "' is already defined.") else
+    let mdecl   = { Types.method_result  = env_typeexp method_return_type;
+                    Types.method_name    = methodname;
+                    Types.method_formals = env_body method_body; } in
+    (mdecl, M.add methodname mdecl menv)
+  | _ -> assert false
 
 
 let env_program prog =
-  List.fold_left (fun env {class_name;class_methods;class_fields} ->
+  List.fold_left (fun env {class_name;class_fields} ->
     let name = class_name.identifier in
     if M.mem name env then
       let pos = class_name.identifier_pos in
       Error.error pos ("The class '" ^ name ^ "' is already defined.") else
-    let class_constructor = List.find (function Constructor _ -> true | _ -> false ) class_methods in
-    let class_methods = List.filter (function Method _ -> true | _ -> false) class_methods in
-    let (mdecls,_) = Utils.fold env_method M.empty class_methods in
-    let (fields,_) = Utils.fold env_field M.empty class_fields in
+    let (fields, methods) = List.partition(function Field _ -> true | _ -> false) class_fields in
+    let constructor = List.find (function Constructor _ -> true | _ -> false ) methods in
+    let methods = List.filter (function Method _ -> true | _ -> false) methods in
+    let (mdecls,_) = Utils.fold env_method M.empty methods in
+    let (fields,_) = Utils.fold env_field M.empty fields in
     let typ = 
       { Types.class_name        = name;
         Types.class_fields      = fields;
-        Types.class_constructor = env_constructor class_constructor;
+        Types.class_constructor = env_constructor constructor;
         Types.class_methods     = mdecls }
     in M.add name typ env
   ) M.empty prog

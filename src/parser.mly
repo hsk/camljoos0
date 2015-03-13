@@ -33,10 +33,6 @@
   let make_exp pos e = { exp_pos = pos;
                          exp     = e }
 
-  let make_field (texp,name,init) =
-    { field_type = texp;
-      field_name = name;
-      field_init = init }
 
   let make_body (formals,locals,stms,return) =
     { formals = formals;
@@ -44,9 +40,9 @@
       statements = stms;
       return = return }
 
-  let make_method (texp,name,body) = Method(texp,name,body)
-
-  let make_constructor (id,body) = Constructor(id, body)
+  let make_method (texp, name, body) = Method(texp,name,body)
+  let make_constructor (id, body) = Constructor(id, body)
+  let make_field (texp, name, init) = Field(texp,name,init)
 
   let make_class (name,fields,constructor,main,methods) =
     let methods = match main with
@@ -57,8 +53,7 @@
     {
       source_file = source_file;
       class_name = name;
-      class_fields = fields;
-      class_methods = constructor :: methods
+      class_fields = fields @ constructor :: methods
     }
 
   let make_source_file p decl =

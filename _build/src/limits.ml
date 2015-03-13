@@ -10,7 +10,6 @@ type typeexp = Types.typeexp
 type formal_param = typeexp * identifier * int (*NEW*)
 (*type local_decl   = typeexp * identifier (* * exp option*) * int (*NEW*)*)
 
-type field_decl = typeexp * identifier * (*field_init      : exp option;*) string
 
 type body =
     { formals      : formal_param list;
@@ -19,16 +18,16 @@ type body =
       max_stack    : int; (*NEW*)
       max_locals   : int  (*NEW*) }
 
-type method_decl =
+type field_decl =
   | Constructor of identifier * body * string
   | Method of typeexp * identifier * body * string
   | Main of body
+  | Field of typeexp * identifier * (*field_init      : exp option;*) string
 
 type class_decl =
-    { source_file_name     : string;
+    { class_file_name     : string;
       class_name           : identifier;
       class_fields         : field_decl list;
-      class_methods        : method_decl list;
       class_decl_signature : string (*NEW*) }
 
 type program = class_decl list
@@ -131,24 +130,22 @@ let limit_body {Codegen.formals;body} =
     max_locals   = mymax  }
 
 
-let limit_field (ty, name, signature) =
-    (ty, name, signature)
-
-let limit_method = function
+let limit_field = function
   | Codegen.Method(return_type, name, body, signature) ->
     Method(return_type, name, limit_body body, signature)
   | Codegen.Constructor (name, body, signature) ->
     Constructor(name, limit_body body, signature)
   | Codegen.Main body -> Main (limit_body body)
+  | Codegen.Field (ty, name, signature) ->
+    Field (ty, name, signature)
 
 
 let limit_program prog =
-  List.map (fun {Codegen.class_methods;class_fields;source_file_name;
+  List.map (fun {Codegen.class_fields;class_file_name;
     class_name;class_decl_signature} ->
-    { source_file_name     = source_file_name;
+    { class_file_name     = class_file_name;
       class_name           = class_name;
       class_fields         = List.map limit_field class_fields;
-      class_methods        = List.map limit_method class_methods;
       class_decl_signature = class_decl_signature }
   ) prog
 

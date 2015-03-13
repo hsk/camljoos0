@@ -172,10 +172,6 @@ and _menhir_state =
   let make_exp pos e = { exp_pos = pos;
                          exp     = e }
 
-  let make_field (texp,name,init) =
-    { field_type = texp;
-      field_name = name;
-      field_init = init }
 
   let make_body (formals,locals,stms,return) =
     { formals = formals;
@@ -183,9 +179,9 @@ and _menhir_state =
       statements = stms;
       return = return }
 
-  let make_method (texp,name,body) = Method(texp,name,body)
-
-  let make_constructor (id,body) = Constructor(id, body)
+  let make_method (texp, name, body) = Method(texp,name,body)
+  let make_constructor (id, body) = Constructor(id, body)
+  let make_field (texp, name, init) = Field(texp,name,init)
 
   let make_class (name,fields,constructor,main,methods) =
     let methods = match main with
@@ -196,8 +192,7 @@ and _menhir_state =
     {
       source_file = source_file;
       class_name = name;
-      class_fields = fields;
-      class_methods = constructor :: methods
+      class_fields = fields @ constructor :: methods
     }
 
   let make_source_file p decl =
@@ -763,7 +758,7 @@ and _menhir_goto_return_statement : _menhir_env -> 'ttv_tail -> _menhir_state ->
         let _6 = _v in
         let (((((_menhir_stack, _menhir_s, _startpos__1_), _, _2), _3, _startpos__3_), _4), _, _) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.method_decl) =      ( let id = make_identifier _startpos _3 in 
+        let _v : (Ast.field_decl) =      ( let id = make_identifier _startpos _3 in 
        let (lvars,stms,retstm) = _6 in
        let body = make_body (_4,lvars,stms,retstm) in
        make_method (_2,id,body) ) in
@@ -884,7 +879,7 @@ and _menhir_goto_option_void_return_statement_ : _menhir_env -> 'ttv_tail -> _me
         let _4 = _v in
         let (((_menhir_stack, _startpos__1_), _2), _, _) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.method_decl) =      ( let (id,formals) = _2 in 
+        let _v : (Ast.field_decl) =      ( let (id,formals) = _2 in 
        let (lvars,stms) = _4 in
        let retstm       = make_retstm _startpos VoidReturn in
        let body = make_body (formals,lvars,stms,retstm) in
@@ -2658,8 +2653,8 @@ and _menhir_reduce61 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return 
     let _v : (Ast.local_decl list) =      ( [] ) in
     _menhir_goto_local_variable_declarations _menhir_env _menhir_stack _menhir_s _v
 
-and _menhir_goto_class_body : _menhir_env -> 'ttv_tail -> (Ast.field_decl list * Ast.method_decl * Ast.body option *
-  Ast.method_decl list) -> 'ttv_return =
+and _menhir_goto_class_body : _menhir_env -> 'ttv_tail -> (Ast.field_decl list * Ast.field_decl * Ast.body option *
+  Ast.field_decl list) -> 'ttv_return =
   fun _menhir_env _menhir_stack _v ->
     let _menhir_stack = Obj.magic _menhir_stack in
     let _menhir_stack = Obj.magic _menhir_stack in
@@ -3033,7 +3028,7 @@ and _menhir_run151 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
         let (_menhir_stack, _menhir_s) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s
 
-and _menhir_goto_list_method_declaration_ : _menhir_env -> 'ttv_tail -> _menhir_state -> (Ast.method_decl list) -> 'ttv_return =
+and _menhir_goto_list_method_declaration_ : _menhir_env -> 'ttv_tail -> _menhir_state -> (Ast.field_decl list) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
     match _menhir_s with
@@ -3041,7 +3036,7 @@ and _menhir_goto_list_method_declaration_ : _menhir_env -> 'ttv_tail -> _menhir_
         let _menhir_stack = Obj.magic _menhir_stack in
         let _menhir_stack = Obj.magic _menhir_stack in
         let ((_menhir_stack, _menhir_s, x), _, xs) = _menhir_stack in
-        let _v : (Ast.method_decl list) =     ( x :: xs ) in
+        let _v : (Ast.field_decl list) =     ( x :: xs ) in
         _menhir_goto_list_method_declaration_ _menhir_env _menhir_stack _menhir_s _v
     | MenhirState241 ->
         let _menhir_stack = Obj.magic _menhir_stack in
@@ -3054,8 +3049,8 @@ and _menhir_goto_list_method_declaration_ : _menhir_env -> 'ttv_tail -> _menhir_
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((((((((((((((_menhir_stack, _startpos__1_), _, _2), _3), _, _startpos__4_), _), _startpos__6_), _), _, _), _startpos__10_), _startpos__11_), _, _12, _startpos__12_), _startpos__13_), _startpos__15_), _, _17) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.field_decl list * Ast.method_decl * Ast.body option *
-  Ast.method_decl list) =      ( let new_exp = make_exp _startpos (New (_12,[])) in (*FIXME: pos?*)
+            let _v : (Ast.field_decl list * Ast.field_decl * Ast.body option *
+  Ast.field_decl list) =      ( let new_exp = make_exp _startpos (New (_12,[])) in (*FIXME: pos?*)
        let new_stm = make_stm _startpos (Exp new_exp) in (*FIXME: pos?*)
        let new_retstm = make_retstm _startpos VoidReturn in(*FIXME: pos?*)
        let body = make_body ([],[],[new_stm],new_retstm) in
@@ -3077,8 +3072,8 @@ and _menhir_goto_list_method_declaration_ : _menhir_env -> 'ttv_tail -> _menhir_
             let _menhir_env = _menhir_discard _menhir_env in
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((((_menhir_stack, _startpos__1_), _, _2), _3), _, _4) = _menhir_stack in
-            let _v : (Ast.field_decl list * Ast.method_decl * Ast.body option *
-  Ast.method_decl list) =      ( (_2,_3,None,_4) ) in
+            let _v : (Ast.field_decl list * Ast.field_decl * Ast.body option *
+  Ast.field_decl list) =      ( (_2,_3,None,_4) ) in
             _menhir_goto_class_body _menhir_env _menhir_stack _v
         | _ ->
             assert (not _menhir_env._menhir_error);
@@ -3835,7 +3830,7 @@ and _menhir_goto_formal_parameter_list : _menhir_env -> 'ttv_tail -> _menhir_sta
 
 and _menhir_reduce47 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s ->
-    let _v : (Ast.method_decl list) =     ( [] ) in
+    let _v : (Ast.field_decl list) =     ( [] ) in
     _menhir_goto_list_method_declaration_ _menhir_env _menhir_stack _menhir_s _v
 
 and _menhir_run242 : _menhir_env -> 'ttv_tail -> _menhir_state -> Lexing.position -> 'ttv_return =
