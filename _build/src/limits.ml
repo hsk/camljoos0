@@ -19,21 +19,15 @@ type body =
       max_stack    : int; (*NEW*)
       max_locals   : int  (*NEW*) }
 
-type constructor_decl = identifier * body * string
-
 type method_decl =
-    { method_return_type : typeexp;
-      method_name        : identifier;
-      method_body        : body;
-      method_signature   : string (*NEW*) }
-
+  | Constructor of identifier * body * string
+  | Method of typeexp * identifier * body * string
+  | Main of body
 
 type class_decl =
     { source_file_name     : string;
       class_name           : identifier;
       class_fields         : field_decl list;
-      class_constructor    : constructor_decl;
-      class_main           : body option;
       class_methods        : method_decl list;
       class_decl_signature : string (*NEW*) }
 
@@ -140,26 +134,20 @@ let limit_body {Codegen.formals;body} =
 let limit_field (ty, name, signature) =
     (ty, name, signature)
 
-
-let limit_method {Codegen.method_return_type;method_name;method_body;method_signature} =
-  { method_return_type = method_return_type;
-    method_name        = method_name;
-    method_body        = limit_body method_body;
-    method_signature   = method_signature }
-
-
-let limit_constructor (name, body, signature) =
-  (name, limit_body body, signature)
+let limit_method = function
+  | Codegen.Method(return_type, name, body, signature) ->
+    Method(return_type, name, limit_body body, signature)
+  | Codegen.Constructor (name, body, signature) ->
+    Constructor(name, limit_body body, signature)
+  | Codegen.Main body -> Main (limit_body body)
 
 
 let limit_program prog =
   List.map (fun {Codegen.class_methods;class_fields;source_file_name;
-    class_name;class_constructor;class_main;class_decl_signature} ->
+    class_name;class_decl_signature} ->
     { source_file_name     = source_file_name;
       class_name           = class_name;
       class_fields         = List.map limit_field class_fields;
-      class_constructor    = limit_constructor class_constructor;
-      class_main           = Utils.opt limit_body class_main;
       class_methods        = List.map limit_method class_methods;
       class_decl_signature = class_decl_signature }
   ) prog

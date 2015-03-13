@@ -44,22 +44,22 @@
       statements = stms;
       return = return }
 
-  let make_method (texp,name,body) =
-    { method_return_type = texp;
-      method_name = name;
-      method_body = body }
+  let make_method (texp,name,body) = Method(texp,name,body)
 
-  let make_constructor (id,body) = (id, body)
+  let make_constructor (id,body) = Constructor(id, body)
 
   let make_class (name,fields,constructor,main,methods) =
+    let methods = match main with
+      | None -> methods
+      | Some body -> Main(body) :: methods 
+    in
     fun source_file ->
-    { 
+    {
       source_file = source_file;
       class_name = name;
       class_fields = fields;
-      class_constructor = constructor;
-      class_main = main;
-      class_methods = methods }
+      class_methods = constructor :: methods
+    }
 
   let make_source_file p decl =
     decl p.Lexing.pos_fname
@@ -155,7 +155,7 @@
 %token <string>IDENTIFIER
 
 
-%start <class_decl> goal          (* the entry point *)
+%start <Ast.class_decl> goal          (* the entry point *)
 %%
 
 (*******************************************************************

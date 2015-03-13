@@ -26,21 +26,15 @@ type body =
 (*    locals     : local_decl list; *)
       body       : Inst.instruction list; }
 
-type constructor_decl = identifier * body * string
-
 type method_decl =
-    { method_return_type : typeexp;
-      method_name        : identifier;
-      method_body        : body;
-      method_signature   : string (*NEW*) }
-
+  | Method of typeexp * identifier * body * string
+  | Main of body
+  | Constructor of identifier * body * string
 
 type class_decl =
     { source_file_name     : string;
       class_name           : identifier;
       class_fields         : field_decl list;
-      class_constructor    : constructor_decl;
-      class_main           : body option;
       class_methods        : method_decl list;
       class_decl_signature : string (*NEW*) }
 
@@ -330,55 +324,44 @@ let codegen_body info {Res.locals;statements;return;formals} =
     body    = List.concat [local_init; body; return] }
 
 
-let codegen_constructor info (name, body, signature) =
-  let fab = codegen_body info body in
-  let supercall = [Inst.Iaload 0;
-                   Inst.Iinvokespecial 
-                     (codegen_method_sig_known "java/lang/Object/<init>()V" 0 0)
-                  ]
-  in
-  let field_init =
-      List.fold_right (fun fdecl flist ->
-        match fdecl.Res.field_init with
-        | None -> flist
-        | Some e -> 
-          let ie = codegen_exp info e in
-          let fieldsig = fdecl.Res.field_signature
-                   ^ " " ^ (Types.typeexp_to_sig fdecl.Res.field_type) in
-          List.concat [[Inst.Iaload 0];
-                       ie;
-                       [Inst.Iputfield fieldsig];
-                       flist]
-      ) info.nonstatic_fields []
-  in
-  let insts = List.concat [supercall; field_init; fab.body] in
-  (name, { fab with body = insts }, signature)
-
-
-let codegen_method info {Res.method_return_type;method_name;method_body;method_signature} =
-  { method_return_type = method_return_type;
-    method_name        = method_name;
-    method_body        = codegen_body info method_body;
-    method_signature   = method_signature }
-
+let codegen_method info = function
+  | Res.Method(return_type, name, body, signature) ->
+    Method (return_type, name, codegen_body info  body,  signature)
+  | Res.Constructor(name, body, signature) ->
+    let fab = codegen_body info body in
+    let supercall =
+      [Inst.Iaload 0; Inst.Iinvokespecial (codegen_method_sig_known "java/lang/Object/<init>()V" 0 0)]
+    in
+    let field_init =
+        List.fold_right (fun fdecl flist ->
+          match fdecl.Res.field_init with
+          | None -> flist
+          | Some e -> 
+            let ie = codegen_exp info e in
+            let fieldsig = fdecl.Res.field_signature
+                     ^ " " ^ (Types.typeexp_to_sig fdecl.Res.field_type) in
+            List.concat [[Inst.Iaload 0];
+                         ie;
+                         [Inst.Iputfield fieldsig];
+                         flist]
+        ) info.nonstatic_fields []
+    in
+    let insts = List.concat [supercall; field_init; fab.body] in
+    Constructor (name, { fab with body = insts }, signature)
+  | Res.Main (body) -> Main (codegen_body info body)
 
 let codegen_program tenv prog =
-  List.map (fun {Res.class_name;class_fields;class_main;class_methods;class_constructor;class_decl_signature;source_file_name} ->
+  List.map (fun {Res.class_name;class_fields;class_methods;class_decl_signature;source_file_name} ->
     let class_type = 
       Env.lookup_env tenv "class" class_name.Ast.identifier class_name.Ast.identifier_pos in
     let info    = { tenv             = tenv;
                     class_type       = class_type;
                     nonstatic_fields = class_fields } in
-    let class_fields = List.map (codegen_field info) class_fields  in
-    let class_main   = Utils.opt (codegen_body info) class_main in
-    let class_methods = List.map (codegen_method info) class_methods in
     { 
       source_file_name     = source_file_name;
       class_name           = class_name;
-      class_fields         = class_fields;
-      class_constructor    = codegen_constructor info class_constructor;
-      class_main           = class_main;
-      class_methods        = class_methods;
+      class_fields         = List.map (codegen_field info) class_fields;
+      class_methods        = List.map (codegen_method info) class_methods;
       class_decl_signature = class_decl_signature; }
   ) prog
 

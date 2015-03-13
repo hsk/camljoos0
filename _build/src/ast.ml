@@ -80,20 +80,16 @@ type body =
       statements : stm list;
       return     : return_stm; }
 
-type constructor_decl = identifier * body
-
 type method_decl =
-    { method_return_type : typeexp;
-      method_name        : identifier;
-      method_body        : body; }
+ | Method of typeexp * identifier * body
+ | Constructor of identifier * body
+ | Main of body
 
 type class_decl	=
     {
       source_file       : string;
       class_name        : identifier;
       class_fields      : field_decl list;
-      class_constructor : constructor_decl;
-      class_main        : body option;
       class_methods     : method_decl list; }
 
 type program = class_decl list

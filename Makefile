@@ -63,16 +63,14 @@ EXCL_DIRS := doc
 MODS := error ast types \
         parser lexer \
         env \
-        linkingast linking \
-        typecheckingast typechecking \
+        linking \
+        typing \
         constants \
-        resourceast resource \
-        codegenerationast codegen \
-        limitsast limits \
+        res \
+        codegen \
+        limits \
         emit \
         main
-
-#        codegenerationast codegeneration
 
 ############################################################
 ## YOU SHOULD NOT NEED TO EDIT ANYTHING BELOW THIS LINE

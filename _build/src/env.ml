@@ -46,10 +46,10 @@ let env_body {formals;locals} =
   ftypes
 
 
-let env_constructor (name, body) = (name.identifier, env_body body)
+let env_constructor (Constructor(name, body)) = (name.identifier, env_body body)
 
 
-let env_method menv {method_name;method_return_type;method_body} =
+let env_method menv (Method(method_return_type,method_name,method_body)) =
   let methodname = method_name.identifier in
   if M.mem methodname menv then 
     let pos = method_name.identifier_pos in
@@ -61,12 +61,13 @@ let env_method menv {method_name;method_return_type;method_body} =
 
 
 let env_program prog =
-  List.fold_left (fun env {class_name;class_methods;class_fields;class_constructor} ->
+  List.fold_left (fun env {class_name;class_methods;class_fields} ->
     let name = class_name.identifier in
     if M.mem name env then
       let pos = class_name.identifier_pos in
       Error.error pos ("The class '" ^ name ^ "' is already defined.") else
-
+    let class_constructor = List.find (function Constructor _ -> true | _ -> false ) class_methods in
+    let class_methods = List.filter (function Method _ -> true | _ -> false) class_methods in
     let (mdecls,_) = Utils.fold env_method M.empty class_methods in
     let (fields,_) = Utils.fold env_field M.empty class_fields in
     let typ = 

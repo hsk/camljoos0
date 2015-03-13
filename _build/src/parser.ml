@@ -183,22 +183,22 @@ and _menhir_state =
       statements = stms;
       return = return }
 
-  let make_method (texp,name,body) =
-    { method_return_type = texp;
-      method_name = name;
-      method_body = body }
+  let make_method (texp,name,body) = Method(texp,name,body)
 
-  let make_constructor (id,body) = (id, body)
+  let make_constructor (id,body) = Constructor(id, body)
 
   let make_class (name,fields,constructor,main,methods) =
+    let methods = match main with
+      | None -> methods
+      | Some body -> Main(body) :: methods 
+    in
     fun source_file ->
-    { 
+    {
       source_file = source_file;
       class_name = name;
       class_fields = fields;
-      class_constructor = constructor;
-      class_main = main;
-      class_methods = methods }
+      class_methods = constructor :: methods
+    }
 
   let make_source_file p decl =
     decl p.Lexing.pos_fname
@@ -884,7 +884,7 @@ and _menhir_goto_option_void_return_statement_ : _menhir_env -> 'ttv_tail -> _me
         let _4 = _v in
         let (((_menhir_stack, _startpos__1_), _2), _, _) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (Ast.constructor_decl) =      ( let (id,formals) = _2 in 
+        let _v : (Ast.method_decl) =      ( let (id,formals) = _2 in 
        let (lvars,stms) = _4 in
        let retstm       = make_retstm _startpos VoidReturn in
        let body = make_body (formals,lvars,stms,retstm) in
@@ -2658,7 +2658,7 @@ and _menhir_reduce61 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return 
     let _v : (Ast.local_decl list) =      ( [] ) in
     _menhir_goto_local_variable_declarations _menhir_env _menhir_stack _menhir_s _v
 
-and _menhir_goto_class_body : _menhir_env -> 'ttv_tail -> (Ast.field_decl list * Ast.constructor_decl * Ast.body option *
+and _menhir_goto_class_body : _menhir_env -> 'ttv_tail -> (Ast.field_decl list * Ast.method_decl * Ast.body option *
   Ast.method_decl list) -> 'ttv_return =
   fun _menhir_env _menhir_stack _v ->
     let _menhir_stack = Obj.magic _menhir_stack in
@@ -2679,7 +2679,7 @@ and _menhir_goto_class_body : _menhir_env -> 'ttv_tail -> (Ast.field_decl list *
         let _menhir_stack = Obj.magic _menhir_stack in
         let (_menhir_stack, _1, _startpos__1_) = _menhir_stack in
         let _startpos = _startpos__1_ in
-        let _v : (class_decl) =         ( make_source_file _startpos _1 ) in
+        let _v : (Ast.class_decl) =         ( make_source_file _startpos _1 ) in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _menhir_stack = Obj.magic _menhir_stack in
         let _1 = _v in
@@ -3054,7 +3054,7 @@ and _menhir_goto_list_method_declaration_ : _menhir_env -> 'ttv_tail -> _menhir_
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((((((((((((((_menhir_stack, _startpos__1_), _, _2), _3), _, _startpos__4_), _), _startpos__6_), _), _, _), _startpos__10_), _startpos__11_), _, _12, _startpos__12_), _startpos__13_), _startpos__15_), _, _17) = _menhir_stack in
             let _startpos = _startpos__1_ in
-            let _v : (Ast.field_decl list * Ast.constructor_decl * Ast.body option *
+            let _v : (Ast.field_decl list * Ast.method_decl * Ast.body option *
   Ast.method_decl list) =      ( let new_exp = make_exp _startpos (New (_12,[])) in (*FIXME: pos?*)
        let new_stm = make_stm _startpos (Exp new_exp) in (*FIXME: pos?*)
        let new_retstm = make_retstm _startpos VoidReturn in(*FIXME: pos?*)
@@ -3077,7 +3077,7 @@ and _menhir_goto_list_method_declaration_ : _menhir_env -> 'ttv_tail -> _menhir_
             let _menhir_env = _menhir_discard _menhir_env in
             let _menhir_stack = Obj.magic _menhir_stack in
             let ((((_menhir_stack, _startpos__1_), _, _2), _3), _, _4) = _menhir_stack in
-            let _v : (Ast.field_decl list * Ast.constructor_decl * Ast.body option *
+            let _v : (Ast.field_decl list * Ast.method_decl * Ast.body option *
   Ast.method_decl list) =      ( (_2,_3,None,_4) ) in
             _menhir_goto_class_body _menhir_env _menhir_stack _v
         | _ ->
@@ -5043,7 +5043,7 @@ and _menhir_discard : _menhir_env -> _menhir_env =
       _menhir_error = false;
       }
 
-and goal : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (class_decl) =
+and goal : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast.class_decl) =
   fun lexer lexbuf ->
     let _menhir_env = let _tok = Obj.magic () in
     {
