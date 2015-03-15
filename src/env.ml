@@ -15,13 +15,13 @@ let f_t {t} =
   | String   -> Types.String
   | Class id -> Types.Class (id.id)
 
-let f_formal lenv (typ, {id=name;id_pos=pos}) =
+let f_prm lenv (typ, {id=name;id_pos=pos}) =
   if M.mem name lenv then Error.error pos "The variable '%s' is already defined." name;
   let ltyp = f_t typ in
   (ltyp, M.add name ltyp lenv)
 
 let f_local lenv (typ, id, _) =
-  f_formal lenv (typ, id)
+  f_prm lenv (typ, id)
 
 let f_field menv = function
   | Field(ty, {id=field_name;id_pos=pos}, _) ->
@@ -38,9 +38,9 @@ let rec fold f env = function
     let (xs, env)  = fold f env xs in
     (x::xs, env)
 
-let f_body {formals;locals} =
-  let (ftypes,lenv)  = fold f_formal M.empty formals in
-  let (_     , _)    = fold f_local lenv locals in
+let f_body {prms; locals} =
+  let (ftypes, lenv) = fold f_prm M.empty prms in
+  let (_     ,  _)   = fold f_local lenv locals in
   ftypes
 
 let f_constructor = function
@@ -51,25 +51,23 @@ let f_method menv = function
   | Method(t, name, body) ->
     if M.mem name.id menv then 
       Error.error name.id_pos "The method '%s' is already defined." name.id;
-    let mdecl   = { Types.method_result  = f_t t;
-                    mname    = name.id;
-                    method_formals = f_body body; } in
+    let mdecl = {Types.mresult = f_t t; mname = name.id; mprms = f_body body;} in
     (mdecl, M.add name.id mdecl menv)
   | _ -> assert false
 
 let f prog =
-  List.fold_left (fun env {cfilename;cname={id=name;id_pos=pos};cfields} ->
-    if M.mem name env then Error.error pos "The class '%s' is already defined." name;
+  List.fold_left (fun env {cfilename;cname={id;id_pos};cfields} ->
+    if M.mem id env then Error.error id_pos "The class '%s' is already defined." id;
     let (fields, methods) = List.partition(function Field _ -> true | _ -> false) cfields in
     let constructor = List.find (function Constructor _ -> true | _ -> false ) methods in
     let methods = List.filter (function Method _ -> true | _ -> false) methods in
     let (mdecls,_) = fold f_method M.empty methods in
     let (fields,_) = fold f_field M.empty fields in
     let typ = 
-      { Types.cname  = name;
+      { Types.cname  = id;
         cfields      = fields;
         cconstruct = f_constructor constructor;
-        class_methods     = mdecls }
-    in M.add name typ env
+        cmethods = mdecls }
+    in M.add id typ env
   ) M.empty prog
 

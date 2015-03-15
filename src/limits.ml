@@ -3,12 +3,12 @@
 
 type id = Ast.id
 type t = Types.t
-type formal_param = t * id * int (*NEW*)
+type prm = t * id * int (*NEW*)
 (*type local   = t * id (* * exp option*) * int (*NEW*)*)
 
 type body =
     { limits       : int * int; (*NEW*)
-      (*formals    : formal_param list;*)
+      (*prms    : prm list;*)
       (*locals     : local list;*)
       body         : Inst.instruction list;
     }
@@ -30,7 +30,7 @@ module LabelMap = Map.Make(String)
 
 let error msg = raise (Error.InternalCompilerError msg)
 
-let f_body {Codegen.formals;body} =
+let f_body {Codegen.prms;body} =
 
   (* label map that associates instruction sequences to labels *)
   let lbl2cont_insts =
@@ -74,7 +74,7 @@ let f_body {Codegen.formals;body} =
       match Inst.local_access i with
       | None -> v
       | Some l -> max (l + 1) v
-    ) (List.length formals + 1) body
+    ) (List.length prms + 1) body
   in
   {limits = (max_stack, max_locals); body}
 

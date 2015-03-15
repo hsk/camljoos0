@@ -66,11 +66,11 @@ and return_stm_desc =
   | VoidReturn
   | ValueReturn of exp
 
-type formal_param = t * id
+type prm = t * id
 type local   = t * id * exp
 
 type body =
-    { formals : formal_param list;
+    { prms    : prm list;
       locals  : local list;
       stms    : stm list;
       return  : return_stm; }

@@ -12,11 +12,11 @@
 
 type id = Ast.id
 type t = Types.t
-type formal_param = t * id * int (*NEW*)
+type prm = t * id * int (*NEW*)
 (*type local   = t * id (* * exp *) * int (*NEW*)*)
 
 type body =
-    { formals    : formal_param list;
+    { prms    : prm list;
 (*    locals     : local list; *)
       body       : Inst.instruction list; }
 
@@ -27,7 +27,7 @@ type field =
   | Field of t * id (*field_init : exp option;*) * string
 
 type class_decl =
-    { cfilename     : string;
+    { cfilename       : string;
       cname           : id;
       cfields         : field list;
       csig : string (*NEW*) }
@@ -41,18 +41,18 @@ let f_method_sig_known msig numargs numreturns =
 let f_method_sig id base m =
   let mname   = id.Ast.id in
   let basesig = Types.cname_to_sig base in
-  let argsigs = List.map Types.t_to_sig m.Types.method_formals in
-  let ressig  = Types.t_to_sig m.Types.method_result in
-  let numargs = List.length m.Types.method_formals in
-  let numreturns = if m.Types.method_result = Types.Void then 0 else 1 in
-  let msig = basesig ^ "/" ^ mname ^ "(" ^ (String.concat "" argsigs) ^ ")" ^ ressig in
+  let prmsigs = List.map Types.t_to_sig m.Types.mprms in
+  let ressig  = Types.t_to_sig m.Types.mresult in
+  let numargs = List.length m.Types.mprms in
+  let numreturns = if m.Types.mresult = Types.Void then 0 else 1 in
+  let msig = basesig ^ "/" ^ mname ^ "(" ^ (String.concat "" prmsigs) ^ ")" ^ ressig in
   f_method_sig_known msig numargs numreturns
 
-let f_constructor_sig base (name,formals) =
+let f_constructor_sig base (name,prms) =
     let basesig = Types.cname_to_sig base in
-    let argsigs = List.map Types.t_to_sig formals in
-    let numargs = List.length formals in
-    let msig    = basesig ^ "/<init>(" ^ (String.concat "" argsigs) ^ ")V" in
+    let prmsigs = List.map Types.t_to_sig prms in
+    let numargs = List.length prms in
+    let msig    = basesig ^ "/<init>(" ^ (String.concat "" prmsigs) ^ ")V" in
     f_method_sig_known msig numargs 0
 
 let f_cond = function
@@ -72,12 +72,12 @@ type env = { tenv             : Types.class_type Types.M.t;
 
 let rec f_lvalue_read env {Res.lvalue;lvalue_type} =
   match lvalue with
-  | Res.Field (id, ftype) -> 
-    let fieldname = id.Ast.id in
-    let fieldtype = Types.t_to_sig lvalue_type in
-    let basesig   = env.class_type.Types.cname in
+  | Res.Field (id, _) -> 
+    let name = id.Ast.id in
+    let jsig = Types.t_to_sig lvalue_type in
+    let csig = env.class_type.Types.cname in
     [Inst.Iaload 0;
-     Inst.Igetfield (basesig ^ "/" ^ fieldname ^ " " ^ fieldtype)]
+     Inst.Igetfield (csig ^ "/" ^ name ^ " " ^ jsig)]
   | Res.Local (id, i) -> 
     begin match lvalue_type with
     | Types.Int
@@ -90,12 +90,12 @@ let rec f_lvalue_read env {Res.lvalue;lvalue_type} =
 and f_lvalue_write env {Res.lvalue;lvalue_type} =
   match lvalue with
   | Res.Field (id,base) ->
-    let fieldname = id.Ast.id in
-    let fieldtype = Types.t_to_sig lvalue_type in
-    let basesig   = env.class_type.Types.cname in
+    let name = id.Ast.id in
+    let jsig = Types.t_to_sig lvalue_type in
+    let csig = env.class_type.Types.cname in
     [Inst.Iaload(0);
      Inst.Iswap;
-     Inst.Iputfield (basesig ^ "/" ^ fieldname ^ " " ^ fieldtype)]
+     Inst.Iputfield (csig ^ "/" ^ name ^ " " ^ jsig)]
   | Res.Local (id,i) -> 
     begin match lvalue_type with
     | Types.Int
@@ -175,7 +175,7 @@ and f_exp env {Res.exp;exp_type} =
       Inst.Iinvokevirtual (f_method_sig id (Types.t_to_string e.Res.exp_type) mtype) ::
       []
     end
-  | Res.New (typ,es,c) ->
+  | Res.New (_, es, c) ->
     let typesig = Types.t_to_string exp_type in
     begin
       Inst.Inew typesig ::
@@ -282,11 +282,11 @@ let f_local env (typ, id, exp, offset) =
   | Types.Void
   | Types.Null -> raise (Error.InternalCompilerError "Illegal type of local initializer")
 
-let f_body env {Res.locals;stms;return;formals} =
+let f_body env {Res.locals;stms;return;prms} =
   let locals = List.concat (List.map (f_local env) locals) in
   let stms   = List.concat (List.map (f_stm env) stms) in
   let return = f_return_stm env return in
-  { formals; body = locals @ stms @ return }
+  { prms; body = locals @ stms @ return }
 
 let f_field env = function
   | Res.Method(return_type, name, body, signature) ->
@@ -323,13 +323,12 @@ let f_field env = function
 
 let f tenv prog =
   List.map (fun {Res.cname;cfields;csig;cfilename} ->
-    let class_type = 
-      Env.lookup_env tenv "class" cname.Ast.id cname.Ast.id_pos in
+    let class_type = Env.lookup_env tenv "class" cname.Ast.id cname.Ast.id_pos in
     let env = { tenv; class_type; nonstatic_fields = cfields } in
     { 
       cfilename;
       cname;
-      cfields         = List.map (f_field env) cfields;
+      cfields = List.map (f_field env) cfields;
       csig = csig;
     }
   ) prog

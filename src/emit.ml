@@ -13,18 +13,16 @@ let f_body ch {limits=(stack,locals);body} =
   List.iter (fun inst -> fprintf ch "%s\n" (Inst.to_asm inst)) body
 
 let f_field ch = function
-  | Constructor (name, body, jsig) ->
+  | Constructor (_, body, jsig) ->
     fprintf ch "\n";
     fprintf ch ".method public %s\n" (make_sig "<init>" jsig);
     fprintf ch "  .throws java/lang/Exception\n";
     f_body ch body;
     fprintf ch ".end method\n"
 
-  | Method(_, name, body, jsig) ->
-    let name = name.Ast.id in
-    let msig = make_sig name jsig in (* chop off full sig appropriately *)
+  | Method(_, {Ast.id}, body, jsig) ->
     fprintf ch "\n";
-    fprintf ch ".method public %s\n" msig;
+    fprintf ch ".method public %s\n" (make_sig id jsig);
     fprintf ch "  .throws java/lang/Exception\n";
     f_body ch body;
     fprintf ch ".end method\n"
@@ -37,8 +35,7 @@ let f_field ch = function
     fprintf ch ".end method\n"
 
   | Field (t,{Ast.id},_) ->
-    let t = Types.t_to_sig t in
-    fprintf ch ".field protected %s %s\n" id t
+    fprintf ch ".field protected %s %s\n" id (Types.t_to_sig t)
 
 let f prog =
   List.iter (fun ({cfilename;cname;cfields}) ->

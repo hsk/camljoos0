@@ -14,9 +14,9 @@ type field_type =
       field_name     : string; }
 
 type method_type =
-    { method_result   : t;
+    { mresult   : t;
       mname     : string;
-      method_formals  : t list; }
+      mprms  : t list; }
 
 type constructor_type = string * t list
 
@@ -25,7 +25,7 @@ type class_type =
       cfields      : field_type list;
       cconstruct : constructor_type;
 (*    class_main        : method_type option;*)
-      class_methods     : method_type list; }
+      cmethods     : method_type list; }
 
 (* map from identifier to named_type *)
 (* type type_env = class_type Env.t *)

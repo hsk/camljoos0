@@ -21,8 +21,8 @@
   let make_exp exp_pos exp = { exp_pos; exp }
 
 
-  let make_body (formals,locals,stms,return) =
-    { formals; locals; stms; return }
+  let make_body (prms,locals,stms,return) =
+    { prms; locals; stms; return }
 
   let make_method (texp, name, body) = Method(texp,name,body)
   let make_constructor (id, body) = Constructor(id, body)
@@ -223,10 +223,10 @@ goal :
 
       constructor_declaration :
         |  PUBLIC constructor_declarator throws_clause constructor_body
-           { let (id,formals) = $2 in 
+           { let (id,prms) = $2 in 
              let (lvars,stms) = $4 in
              let retstm       = make_retstm $startpos VoidReturn in
-             let body = make_body (formals,lvars,stms,retstm) in
+             let body = make_body (prms,lvars,stms,retstm) in
              make_constructor (id,body) }
 
         constructor_declarator  :
