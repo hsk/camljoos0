@@ -22,8 +22,8 @@ type unop =
   | Complement (*complement*)
   | CharToString
 
-type lvalue = { lvalue_pos: Lexing.position; lvalue: lvalue_desc }
-and lvalue_desc =
+type lval = { lval_pos: Lexing.position; lval: lval_desc }
+and lval_desc =
   | Local of id
   | Field of id
 
@@ -38,8 +38,8 @@ and exp_desc =
   | This
   | Invoke of exp * id * exp list
   | New of id * exp list
-  | Lvalue of lvalue
-  | Assignment of lvalue * exp
+  | Lvalue of lval
+  | Assignment of lval * exp
   | Print of exp
   | Read
 
@@ -53,8 +53,8 @@ and stm_desc =
   | Empty
   | Block of stm list
 
-type return_stm = { return_stm_pos: Lexing.position; return_stm: return_stm_desc }
-and return_stm_desc = 
+type rstm = { rstm_pos: Lexing.position; rstm: rstm_desc }
+and rstm_desc = 
   | VoidReturn
   | ValueReturn of exp
 
@@ -65,7 +65,7 @@ type body =
     { prms    : prm list;
       locals  : local list;
       stms    : stm list;
-      return  : return_stm; }
+      return  : rstm; }
 
 type field = 
   | Method of t * id * body

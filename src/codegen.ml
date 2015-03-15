@@ -70,42 +70,42 @@ type env = { tenv             : Types.class_type Types.M.t;
              class_type       : Types.class_type;
              nonstatic_fields : Res.field list }
 
-let rec f_lvalue_read env {Res.lvalue;lvalue_type} =
-  match lvalue with
+let rec f_lval_read env {Res.lval;lt} =
+  match lval with
   | Res.Field (id, _) -> 
     let name = id.Ast.id in
-    let jsig = Types.t_to_sig lvalue_type in
+    let jsig = Types.t_to_sig lt in
     let csig = env.class_type.Types.cname in
     [Inst.Iaload 0;
      Inst.Igetfield (csig ^ "/" ^ name ^ " " ^ jsig)]
   | Res.Local (id, i) -> 
-    begin match lvalue_type with
+    begin match lt with
     | Types.Int
     | Types.Boolean -> [Inst.Iiload i] (* integer load *)
     | Types.String 
     | Types.Class _ -> [Inst.Iaload i] (* address load *)
-    | _ -> raise (Error.InternalCompilerError "Illegal type of lvalue")
+    | _ -> raise (Error.InternalCompilerError "Illegal type of lval")
     end
 
-and f_lvalue_write env {Res.lvalue;lvalue_type} =
-  match lvalue with
+and f_lval_write env {Res.lval;lt} =
+  match lval with
   | Res.Field (id,base) ->
     let name = id.Ast.id in
-    let jsig = Types.t_to_sig lvalue_type in
+    let jsig = Types.t_to_sig lt in
     let csig = env.class_type.Types.cname in
     [Inst.Iaload(0);
      Inst.Iswap;
      Inst.Iputfield (csig ^ "/" ^ name ^ " " ^ jsig)]
   | Res.Local (id,i) -> 
-    begin match lvalue_type with
+    begin match lt with
     | Types.Int
     | Types.Boolean  -> [Inst.Iistore i] (* integer store *)
     | Types.String 
     | Types.Class _  -> [Inst.Iastore i] (* address store *)
-    | _ -> raise (Error.InternalCompilerError "Illegal type of lvalue")
+    | _ -> raise (Error.InternalCompilerError "Illegal type of lval")
     end
 
-and f_exp env {Res.exp;exp_type} =
+and f_exp env {Res.exp;e_t} =
   match exp with
   | Res.Binop (e1, op, e2) ->
     f_exp env e1 @
@@ -172,11 +172,11 @@ and f_exp env {Res.exp;exp_type} =
     begin
       f_exp env e @
       List.concat (List.map (fun e -> f_exp env e) es) @
-      Inst.Iinvokevirtual (f_method_sig id (Types.t_to_string e.Res.exp_type) mt) ::
+      Inst.Iinvokevirtual (f_method_sig id (Types.t_to_string e.Res.e_t) mt) ::
       []
     end
   | Res.New (_, es, c) ->
-    let typesig = Types.t_to_string exp_type in
+    let typesig = Types.t_to_string e_t in
     begin
       Inst.Inew typesig ::
       Inst.Idup ::
@@ -184,16 +184,16 @@ and f_exp env {Res.exp;exp_type} =
       Inst.Iinvokespecial (f_constructor_sig typesig c) ::
       []
     end
-  | Res.Lvalue lval -> f_lvalue_read env lval
+  | Res.Lvalue lval -> f_lval_read env lval
   | Res.Assignment (lval, e) ->
     begin
       f_exp env e @
       Inst.Idup ::
-      f_lvalue_write env lval
+      f_lval_write env lval
     end
   | Res.Print e ->
     let prmt =
-      match e.Res.exp_type with
+      match e.Res.e_t with
       | Types.Int -> "I"
       | Types.Boolean -> "Z"
       | Types.String
@@ -218,7 +218,7 @@ let rec f_stm env {Res.stm} =
   match stm with
   | Res.Exp e ->
     let ie = f_exp env e in
-    begin match e.Res.exp_type with
+    begin match e.Res.e_t with
     | Types.Void -> ie
     | _ -> ie @ [Inst.Ipop]
     end
@@ -259,12 +259,12 @@ let rec f_stm env {Res.stm} =
   | Res.Empty -> []
   | Res.Block ss -> List.concat (List.map (f_stm env) ss)
 
-let f_return_stm env {Res.return_stm} =
-  match return_stm with
+let f_rstm env {Res.rstm} =
+  match rstm with
   | Res.VoidReturn -> [Inst.Ireturn]
   | Res.ValueReturn e ->
     f_exp env e @
-    begin match e.Res.exp_type with
+    begin match e.Res.e_t with
     | Types.Int
     | Types.Boolean -> [Inst.Iireturn]
     | Types.String
@@ -285,7 +285,7 @@ let f_local env (typ, id, exp, offset) =
 let f_body env {Res.locals;stms;return;prms} =
   let locals = List.concat (List.map (f_local env) locals) in
   let stms   = List.concat (List.map (f_stm env) stms) in
-  let return = f_return_stm env return in
+  let return = f_rstm env return in
   { prms; body = locals @ stms @ return }
 
 let f_field env = function

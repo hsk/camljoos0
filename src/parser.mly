@@ -14,10 +14,10 @@
     else Int64.to_int32 i
 
   let make_id id_pos id = { id_pos; id }
-  let make_lvalue lvalue_pos lvalue = { lvalue_pos; lvalue }
+  let make_lval lval_pos lval = { lval_pos; lval }
   let make_t pos t = { t_pos = pos; t = t }
   let make_stm pos s = { stm_pos = pos; stm = s }
-  let make_retstm pos rs = { return_stm_pos = pos; return_stm = rs }
+  let make_retstm pos rs = { rstm_pos = pos; rstm = rs }
   let make_exp e_pos exp = { e_pos; exp }
 
 
@@ -465,5 +465,5 @@ goal :
         |  left_hand_side ASSIGN exp { make_exp $startpos (Assignment($1,$3)) }
 
       left_hand_side :
-        |  name { make_lvalue $startpos (Local $1) }
-        |  THIS DOT name { make_lvalue $startpos (Field $3) }
+        |  name { make_lval $startpos (Local $1) }
+        |  THIS DOT name { make_lval $startpos (Field $3) }
