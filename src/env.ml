@@ -3,8 +3,7 @@ open Ast
 module M = Types.M
 
 let lookup_env env kind id pos =
-  if M.mem id env
-  then M.find id env
+  if M.mem id env then M.find id env
   else Error.error pos "The %s '%s' is not defined." kind id
 
 let f_t {t} =
@@ -15,32 +14,31 @@ let f_t {t} =
   | String   -> Types.String
   | Class id -> Types.Class (id.id)
 
-let f_prm lenv (typ, {id=name;id_pos=pos}) =
-  if M.mem name lenv then Error.error pos "The variable '%s' is already defined." name;
+let f_prm lenv (typ, {id;id_pos}) =
+  if M.mem id lenv then Error.error id_pos "The variable '%s' is already defined." id;
   let ltyp = f_t typ in
-  (ltyp, M.add name ltyp lenv)
+  (ltyp, M.add id ltyp lenv)
 
 let f_local lenv (typ, id, _) =
   f_prm lenv (typ, id)
 
 let f_field menv = function
-  | Field(ty, {id=field_name;id_pos=pos}, _) ->
-    if M.mem field_name menv then 
-      Error.error pos "The field '%s' is already defined." field_name;
-    let field = { Types.field_type = f_t ty; field_name} in
-    (field, M.add field_name field menv)
+  | Field(t, {id;id_pos}, _) ->
+    if M.mem id menv then Error.error id_pos "The field '%s' is already defined." id;
+    let field = {Types.field_type = f_t t; field_name = id} in
+    (field, M.add id field menv)
   | _ -> assert false
 
 let rec fold f env = function
   | [] -> ([], env)
   | x::xs ->
-    let (x, env)   = f env x in
-    let (xs, env)  = fold f env xs in
+    let (x, env)  = f env x in
+    let (xs, env) = fold f env xs in
     (x::xs, env)
 
 let f_body {prms; locals} =
   let (ftypes, lenv) = fold f_prm M.empty prms in
-  let (_     ,  _)   = fold f_local lenv locals in
+  ignore (fold f_local lenv locals);
   ftypes
 
 let f_constructor = function
@@ -48,11 +46,10 @@ let f_constructor = function
   | _ -> assert false
 
 let f_method menv = function
-  | Method(t, name, body) ->
-    if M.mem name.id menv then 
-      Error.error name.id_pos "The method '%s' is already defined." name.id;
-    let mdecl = {Types.mresult = f_t t; mname = name.id; mprms = f_body body;} in
-    (mdecl, M.add name.id mdecl menv)
+  | Method(t, {id; id_pos}, body) ->
+    if M.mem id menv then Error.error id_pos "The method '%s' is already defined." id;
+    let mdecl = {Types.mresult = f_t t; mname = id; mprms = f_body body;} in
+    (mdecl, M.add id mdecl menv)
   | _ -> assert false
 
 let f prog =

@@ -32,8 +32,8 @@ type class_decl =
       cfields         : field list;
       csig : string (*NEW*) }
 
-let f_method_sig_known msig numargs numreturns =
-  { Inst.msig      = msig;
+let mk_msig msig numargs numreturns =
+  { Inst.msig       = msig;
     Inst.m_nargs    = numargs;
     Inst.m_nreturns = numreturns
   }
@@ -46,14 +46,14 @@ let f_method_sig id base m =
   let numargs = List.length m.Types.mprms in
   let numreturns = if m.Types.mresult = Types.Void then 0 else 1 in
   let msig = basesig ^ "/" ^ mname ^ "(" ^ (String.concat "" prmsigs) ^ ")" ^ ressig in
-  f_method_sig_known msig numargs numreturns
+  mk_msig msig numargs numreturns
 
 let f_constructor_sig base (name,prms) =
     let basesig = Types.cname_to_sig base in
     let prmsigs = List.map Types.t_to_sig prms in
     let numargs = List.length prms in
     let msig    = basesig ^ "/<init>(" ^ (String.concat "" prmsigs) ^ ")V" in
-    f_method_sig_known msig numargs 0
+    mk_msig msig numargs 0
 
 let f_cond = function
   | Typing.Eq -> Inst.Eq
@@ -107,7 +107,7 @@ and f_lvalue_write env {Res.lvalue;lvalue_type} =
 
 and f_exp env {Res.exp;exp_type} =
   match exp with
-  | Res.Binop (e1,op,e2) ->
+  | Res.Binop (e1, op, e2) ->
     f_exp env e1 @
     f_exp env e2 @
     begin match op with
@@ -133,7 +133,7 @@ and f_exp env {Res.exp;exp_type} =
         Inst.Ilabel endl
       ]
     | Typing.Concat ->
-      [ Inst.Iinvokevirtual (f_method_sig_known 
+      [ Inst.Iinvokevirtual (mk_msig 
           "java/lang/String/concat(Ljava/lang/String;)Ljava/lang/String;" 1 1)
       ]
     end
@@ -152,27 +152,27 @@ and f_exp env {Res.exp;exp_type} =
           Inst.Ilabel endl]
     | Typing.BooleanToString ->
       let msig = "java/lang/String/valueOf(Z)Ljava/lang/String;" in
-      [Inst.Iinvokestatic (f_method_sig_known msig 1 1)]
+      [Inst.Iinvokestatic (mk_msig msig 1 1)]
     | Typing.IntToString ->
       let msig = "java/lang/String/valueOf(I)Ljava/lang/String;" in
-      [Inst.Iinvokestatic (f_method_sig_known msig 1 1)]
+      [Inst.Iinvokestatic (mk_msig msig 1 1)]
     | Typing.CharToString ->
       let msig = "java/lang/String/valueOf(C)Ljava/lang/String;" in
-      [Inst.Iinvokestatic (f_method_sig_known msig 1 1)]
+      [Inst.Iinvokestatic (mk_msig msig 1 1)]
     | Typing.ObjectToString ->
       let msig = "java/lang/String/valueOf(Ljava/lang/Object;)Ljava/lang/String;" in
-      [Inst.Iinvokestatic (f_method_sig_known msig 1 1)]
+      [Inst.Iinvokestatic (mk_msig msig 1 1)]
     end
   | Res.IntConst i     -> [Inst.Ildc_int i]
   | Res.StringConst s  -> [Inst.Ildc_string s]
   | Res.BooleanConst b -> [Inst.Ildc_int (if b then 1l else 0l)]
   | Res.Null           -> [Inst.Iaconst_null]
   | Res.This           -> [Inst.Iaload 0]
-  | Res.Invoke (e, id, es, mtype) ->
+  | Res.Invoke (e, id, es, mt) ->
     begin
       f_exp env e @
       List.concat (List.map (fun e -> f_exp env e) es) @
-      Inst.Iinvokevirtual (f_method_sig id (Types.t_to_string e.Res.exp_type) mtype) ::
+      Inst.Iinvokevirtual (f_method_sig id (Types.t_to_string e.Res.exp_type) mt) ::
       []
     end
   | Res.New (_, es, c) ->
@@ -192,7 +192,7 @@ and f_exp env {Res.exp;exp_type} =
       f_lvalue_write env lval
     end
   | Res.Print e ->
-    let argtype =
+    let prmt =
       match e.Res.exp_type with
       | Types.Int -> "I"
       | Types.Boolean -> "Z"
@@ -200,18 +200,18 @@ and f_exp env {Res.exp;exp_type} =
       | Types.Class _ -> "Ljava/lang/Object;"
       | _ -> raise (Error.InternalCompilerError "Illegal print type")
     in
-    let msig = "java/io/PrintStream/print(" ^ argtype ^ ")V" in
+    let msig = "java/io/PrintStream/print(" ^ prmt ^ ")V" in
     begin
       f_exp env e @
       Inst.Igetstatic "java/lang/System/out Ljava/io/PrintStream;" ::
       Inst.Iswap ::
-      Inst.Iinvokevirtual (f_method_sig_known msig 1 0) ::
+      Inst.Iinvokevirtual (mk_msig msig 1 0) ::
       []
     end
   | Res.Read ->
     (* Generate code as if System.in.read() was called. *)
     [ Inst.Igetstatic "java/lang/System/in Ljava/io/InputStream;";
-      Inst.Iinvokevirtual (f_method_sig_known "java/io/InputStream/read()I" 0 1)
+      Inst.Iinvokevirtual (mk_msig "java/io/InputStream/read()I" 0 1)
     ]
 
 let rec f_stm env {Res.stm} =
@@ -257,7 +257,7 @@ let rec f_stm env {Res.stm} =
       []
     end
   | Res.Empty -> []
-  | Res.Block b -> List.concat (List.map (f_stm env) b)
+  | Res.Block ss -> List.concat (List.map (f_stm env) ss)
 
 let f_return_stm env {Res.return_stm} =
   match return_stm with
@@ -295,20 +295,20 @@ let f_field env = function
     let body = f_body env body in
     let supercall =
       [ Inst.Iaload 0;
-        Inst.Iinvokespecial (f_method_sig_known "java/lang/Object/<init>()V" 0 0)]
+        Inst.Iinvokespecial (mk_msig "java/lang/Object/<init>()V" 0 0)]
     in
     let field_init =
         List.fold_right (fun field flist ->
           begin match field with
-          | Res.Field(ty,name,init,signature) ->
+          | Res.Field(t,name,init,jsig) ->
             begin match init with
             | None -> flist
             | Some e -> 
-              let fieldsig = signature ^ " " ^ (Types.t_to_sig ty) in
+              let fsig = jsig ^ " " ^ (Types.t_to_sig t) in
               begin
                 Inst.Iaload 0 ::
                 f_exp env e @
-                Inst.Iputfield fieldsig ::
+                Inst.Iputfield fsig ::
                 flist
               end
             end
@@ -319,7 +319,7 @@ let f_field env = function
     let insts = supercall @ field_init @ body.body in
     Constructor (name, { body with body = insts }, signature)
   | Res.Main body -> Main (f_body env body)
-  | Res.Field (ty, name, _, signature) -> Field(ty, name, signature)
+  | Res.Field (t, name, _, jsig) -> Field(t, name, jsig)
 
 let f tenv prog =
   List.map (fun {Res.cname;cfields;csig;cfilename} ->

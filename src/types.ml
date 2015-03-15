@@ -14,18 +14,18 @@ type field_type =
       field_name     : string; }
 
 type method_type =
-    { mresult   : t;
-      mname     : string;
-      mprms  : t list; }
+    { mresult : t;
+      mname   : string;
+      mprms   : t list; }
 
 type constructor_type = string * t list
 
 type class_type =
-    { cname        : string;
-      cfields      : field_type list;
+    { cname      : string;
+      cfields    : field_type list;
       cconstruct : constructor_type;
-(*    class_main        : method_type option;*)
-      cmethods     : method_type list; }
+    (*class_main : method_type option;*)
+      cmethods   : method_type list; }
 
 (* map from identifier to named_type *)
 (* type type_env = class_type Env.t *)

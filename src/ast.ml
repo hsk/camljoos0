@@ -9,20 +9,12 @@ and t_desc =
   | Class of id
 
 type binop =
-  | Add
-  | Minus
-  | Times
-  | Divide
-  | Modulo
-  | Eq
-  | Ne
-  | Lt
-  | Le
-  | Gt
-  | Ge
-  | And
-  | Or
-  | Xor
+  | Add | Minus
+  | Times | Divide | Modulo
+  | Eq | Ne
+  | Lt | Le
+  | Gt | Ge
+  | And | Or | Xor
   | Concat (* // Only created for + (char) *)
 
 type unop =
@@ -35,7 +27,7 @@ and lvalue_desc =
   | Local of id
   | Field of id
 
-type exp = { exp_pos: Lexing.position; exp: exp_desc }
+type exp = { e_pos: Lexing.position; exp: exp_desc }
 and exp_desc =
   | Binop of exp * binop * exp
   | Unop of unop * exp

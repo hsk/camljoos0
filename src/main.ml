@@ -49,8 +49,7 @@ let compile filenames =
     let ()   = apply Emit.f           last "code emitting" in
     0
   with
-    | Error.ErrorExit ->
-      1
+    | Error.ErrorExit -> 1
   end
 
 let _ =

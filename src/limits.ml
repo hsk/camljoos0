@@ -7,10 +7,10 @@ type prm = t * id * int (*NEW*)
 (*type local   = t * id (* * exp option*) * int (*NEW*)*)
 
 type body =
-    { limits       : int * int; (*NEW*)
-      (*prms    : prm list;*)
-      (*locals     : local list;*)
-      body         : Inst.instruction list;
+    { limits : int * int; (*NEW*)
+    (*prms   : prm list;*)
+    (*locals : local list;*)
+      body   : Inst.instruction list;
     }
 
 type field =
@@ -20,10 +20,10 @@ type field =
   | Field of t * id * (*field_init      : exp option;*) string
 
 type class_decl =
-    { cfilename      : string;
-      cname           : id;
-      cfields         : field list;
-      csig : string (*NEW*) }
+    { cfilename : string;
+      cname     : id;
+      cfields   : field list;
+      csig      : string (*NEW*) }
 
 
 module LabelMap = Map.Make(String)
@@ -79,15 +79,13 @@ let f_body {Codegen.prms;body} =
   {limits = (max_stack, max_locals); body}
 
 let f_field = function
-  | Codegen.Method(ty, name, body, sign) -> Method(ty, name, f_body body, sign)
-  | Codegen.Constructor(name, body, sign) -> Constructor(name, f_body body, sign)
+  | Codegen.Method(t, name, body, jsig) -> Method(t, name, f_body body, jsig)
+  | Codegen.Constructor(name, body, jsig) -> Constructor(name, f_body body, jsig)
   | Codegen.Main body -> Main(f_body body)
-  | Codegen.Field(ty, name, sign) -> Field(ty, name, sign)
+  | Codegen.Field(t, name, jsig) -> Field(t, name, jsig)
 
 let f prog =
   List.map (fun {Codegen.cfilename;cname;cfields;csig} ->
-    { cfilename; cname;
-      cfields         = List.map f_field cfields;
-      csig = csig }
+    { cfilename; cname; csig; cfields = List.map f_field cfields; }
   ) prog
 

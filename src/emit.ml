@@ -7,7 +7,7 @@ open Printf
 let make_sig mname fullsig =
   mname ^ (Str.string_after fullsig (String.index fullsig '('))
 
-let f_body ch {limits=(stack,locals);body} = 
+let f_body ch {limits=(stack, locals); body} = 
   fprintf ch "  .limit stack %d\n" stack;
   fprintf ch "  .limit locals %d\n" locals;
   List.iter (fun inst -> fprintf ch "%s\n" (Inst.to_asm inst)) body
@@ -38,7 +38,7 @@ let f_field ch = function
     fprintf ch ".field protected %s %s\n" id (Types.t_to_sig t)
 
 let f prog =
-  List.iter (fun ({cfilename;cname;cfields}) ->
+  List.iter (fun ({cfilename; cname; cfields}) ->
     let file_name = (Filename.chop_extension cfilename) ^ ".j" in
     try
       let ch = open_out file_name in

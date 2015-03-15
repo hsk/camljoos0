@@ -18,7 +18,7 @@
   let make_t pos t = { t_pos = pos; t = t }
   let make_stm pos s = { stm_pos = pos; stm = s }
   let make_retstm pos rs = { return_stm_pos = pos; return_stm = rs }
-  let make_exp exp_pos exp = { exp_pos; exp }
+  let make_exp e_pos exp = { e_pos; exp }
 
 
   let make_body (prms,locals,stms,return) =
