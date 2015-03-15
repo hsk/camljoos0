@@ -15,7 +15,7 @@ type field_type =
 
 type method_type =
     { method_result   : t;
-      method_name     : string;
+      mname     : string;
       method_formals  : t list; }
 
 type constructor_type = string * t list

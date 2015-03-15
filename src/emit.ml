@@ -4,8 +4,8 @@
 open Limits
 open Printf
 
-let make_sig method_name fullsig =
-  method_name ^ (Str.string_after fullsig (String.index fullsig '('))
+let make_sig mname fullsig =
+  mname ^ (Str.string_after fullsig (String.index fullsig '('))
 
 let f_body ch {limits=(stack,locals);body} = 
   fprintf ch "  .limit stack %d\n" stack;

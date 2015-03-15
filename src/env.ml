@@ -52,7 +52,7 @@ let f_method menv = function
     if M.mem name.id menv then 
       Error.error name.id_pos "The method '%s' is already defined." name.id;
     let mdecl   = { Types.method_result  = f_t t;
-                    method_name    = name.id;
+                    mname    = name.id;
                     method_formals = f_body body; } in
     (mdecl, M.add name.id mdecl menv)
   | _ -> assert false
