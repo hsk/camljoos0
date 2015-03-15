@@ -9,23 +9,23 @@ type t =
   | Class of string
   | Null
 
-type field_type =
-    { field_type     : t;
+type ft =
+    { ft     : t;
       field_name     : string; }
 
-type method_type =
+type mt =
     { mresult : t;
       mname   : string;
       mprms   : t list; }
 
-type constructor_type = string * t list
+type constructor_t = string * t list
 
 type class_type =
     { cname      : string;
-      cfields    : field_type list;
-      cconstruct : constructor_type;
-    (*class_main : method_type option;*)
-      cmethods   : method_type list; }
+      cfts       : ft list;
+      cconstruct : constructor_t;
+    (*class_main : mt option;*)
+      cmts       : mt list; }
 
 (* map from identifier to named_type *)
 (* type type_env = class_type Env.t *)

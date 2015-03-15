@@ -22,7 +22,7 @@ type unop =
   | Complement (*complement*)
   | CharToString
 
-type lval = { lval_pos: Lexing.position; lval: lval_desc }
+type lval = { lpos: Lexing.position; lval: lval_desc }
 and lval_desc =
   | Local of id
   | Field of id

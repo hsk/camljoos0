@@ -14,7 +14,7 @@
     else Int64.to_int32 i
 
   let make_id id_pos id = { id_pos; id }
-  let make_lval lval_pos lval = { lval_pos; lval }
+  let make_lval lpos lval = { lpos; lval }
   let make_t pos t = { t_pos = pos; t = t }
   let make_stm pos s = { stm_pos = pos; stm = s }
   let make_retstm pos rs = { rstm_pos = pos; rstm = rs }
