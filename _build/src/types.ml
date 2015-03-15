@@ -21,9 +21,9 @@ type method_type =
 type constructor_type = string * t list
 
 type class_type =
-    { class_name        : string;
-      class_fields      : field_type list;
-      class_constructor : constructor_type;
+    { cname        : string;
+      cfields      : field_type list;
+      cconstruct : constructor_type;
 (*    class_main        : method_type option;*)
       class_methods     : method_type list; }
 

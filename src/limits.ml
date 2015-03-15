@@ -20,10 +20,10 @@ type field_decl =
   | Field of t * id * (*field_init      : exp option;*) string
 
 type class_decl =
-    { class_file_name      : string;
-      class_name           : id;
-      class_fields         : field_decl list;
-      class_decl_signature : string (*NEW*) }
+    { cfilename      : string;
+      cname           : id;
+      cfields         : field_decl list;
+      csig : string (*NEW*) }
 
 
 module LabelMap = Map.Make(String)
@@ -85,9 +85,9 @@ let f_field = function
   | Codegen.Field(ty, name, sign) -> Field(ty, name, sign)
 
 let f prog =
-  List.map (fun {Codegen.class_file_name;class_name;class_fields;class_decl_signature} ->
-    { class_file_name; class_name;
-      class_fields         = List.map f_field class_fields;
-      class_decl_signature = class_decl_signature }
+  List.map (fun {Codegen.cfilename;cname;cfields;csig} ->
+    { cfilename; cname;
+      cfields         = List.map f_field cfields;
+      csig = csig }
   ) prog
 

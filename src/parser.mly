@@ -33,11 +33,11 @@
       | None -> methods
       | Some body -> Main(body) :: methods 
     in
-    fun class_file_name ->
+    fun cfilename ->
     {
-      class_file_name = class_file_name;
-      class_name = name;
-      class_fields = fields @ constructor :: methods
+      cfilename = cfilename;
+      cname = name;
+      cfields = fields @ constructor :: methods
     }
 
   let make_source_file p decl =

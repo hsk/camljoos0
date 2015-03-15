@@ -83,8 +83,8 @@ type field_decl =
 
 type class_decl	=
     {
-      class_file_name : string;
-      class_name      : id;
-      class_fields    : field_decl list;
+      cfilename : string;
+      cname      : id;
+      cfields    : field_decl list;
     }
 

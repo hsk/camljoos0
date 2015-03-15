@@ -27,10 +27,10 @@ type field_decl =
   | Field of t * id (*field_init : exp option;*) * string
 
 type class_decl =
-    { class_file_name     : string;
-      class_name           : id;
-      class_fields         : field_decl list;
-      class_decl_signature : string (*NEW*) }
+    { cfilename     : string;
+      cname           : id;
+      cfields         : field_decl list;
+      csig : string (*NEW*) }
 
 let f_method_sig_known msig numargs numreturns =
   { Inst.method_sig      = msig;
@@ -75,7 +75,7 @@ let rec f_lvalue_read env {Res.lvalue;lvalue_type} =
   | Res.Field (id, ftype) -> 
     let fieldname = id.Ast.id in
     let fieldtype = Types.t_to_sig lvalue_type in
-    let basesig   = env.class_type.Types.class_name in
+    let basesig   = env.class_type.Types.cname in
     [Inst.Iaload 0;
      Inst.Igetfield (basesig ^ "/" ^ fieldname ^ " " ^ fieldtype)]
   | Res.Local (id, i) -> 
@@ -92,7 +92,7 @@ and f_lvalue_write env {Res.lvalue;lvalue_type} =
   | Res.Field (id,base) ->
     let fieldname = id.Ast.id in
     let fieldtype = Types.t_to_sig lvalue_type in
-    let basesig   = env.class_type.Types.class_name in
+    let basesig   = env.class_type.Types.cname in
     [Inst.Iaload(0);
      Inst.Iswap;
      Inst.Iputfield (basesig ^ "/" ^ fieldname ^ " " ^ fieldtype)]
@@ -322,15 +322,15 @@ let f_field env = function
   | Res.Field (ty, name, _, signature) -> Field(ty, name, signature)
 
 let f tenv prog =
-  List.map (fun {Res.class_name;class_fields;class_decl_signature;class_file_name} ->
+  List.map (fun {Res.cname;cfields;csig;cfilename} ->
     let class_type = 
-      Env.lookup_env tenv "class" class_name.Ast.id class_name.Ast.id_pos in
-    let env = { tenv; class_type; nonstatic_fields = class_fields } in
+      Env.lookup_env tenv "class" cname.Ast.id cname.Ast.id_pos in
+    let env = { tenv; class_type; nonstatic_fields = cfields } in
     { 
-      class_file_name;
-      class_name;
-      class_fields         = List.map (f_field env) class_fields;
-      class_decl_signature = class_decl_signature;
+      cfilename;
+      cname;
+      cfields         = List.map (f_field env) cfields;
+      csig = csig;
     }
   ) prog
 

@@ -41,15 +41,15 @@ let f_field ch = function
     fprintf ch ".field protected %s %s\n" id t
 
 let f prog =
-  List.iter (fun ({class_file_name;class_name;class_fields}) ->
-    let file_name = (Filename.chop_extension class_file_name) ^ ".j" in
+  List.iter (fun ({cfilename;cname;cfields}) ->
+    let file_name = (Filename.chop_extension cfilename) ^ ".j" in
     try
       let ch = open_out file_name in
-      fprintf ch ".source %s\n" (Filename.basename class_file_name);
-      fprintf ch ".class public %s\n" (class_name.Ast.id);
+      fprintf ch ".source %s\n" (Filename.basename cfilename);
+      fprintf ch ".class public %s\n" (cname.Ast.id);
       fprintf ch ".super java/lang/Object\n";
 
-      let (fields, methods) = List.partition (function Field _ -> true | _ -> false) class_fields in
+      let (fields, methods) = List.partition (function Field _ -> true | _ -> false) cfields in
       List.iter (f_field ch) fields;
       List.iter (f_field ch) methods;
 
