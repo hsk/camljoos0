@@ -1,6 +1,46 @@
 Joos0 compiler
 ==============
 
+CamlJoos0改
+
+これは、CamlJoosをリファクタリングしてみたものです。
+
+- map,foldを使用
+    - 主要な操作対象の変数は一番後ろに移動し、map,fold等の関数を使う事で関数の数を減らしました。
+- 不要コメントの削除
+    - 型情報のみが書いてあるものは、リファクタリングしていて型が変わってしまったのとツールで吐けば良いので削除しました。
+- タプルの使用
+    - レコードは助長になりがちなのでタプルとパターンマッチを使う事で短くしました。
+- 名前を単純化
+    - `formal_and_body_decl`のような長い変数名はシンプルに `body` とする事にしました。
+- モジュール名のエイリアスの削除
+    - 名前を単純化したのでTAst等のエイリアスは削除しました。
+- 
+- 代数データ型の使用
+    - コンストラクタ、メイン、メソッド、フィールドを一つのデータ型にまとめる
+- データ定義ファイルの削除
+    - 例えば、limitsastはlimitsに含める事でソースファイルを削減しました。
+
+# ファイル構成
+
+- main.ml メイン
+    - error.ml ast.ml types.ml エラーと構文木と型
+    - utils.ml ユーティリティ
+    - parser.ml lexer.ml パーサと字句解析
+
+    - コンパイラパス
+        - env 型環境の作成
+        - link リンク Ast.typeexpをTypes.typeexpに変換しつつ定義チェックをする。
+        - typing 型チェック
+        - constfold 定数畳み込み最適化
+        - res リソース
+        - codegen コード生成
+        - limits リミットの計算
+        - emit コード出力
+
+さんざんプログラムを弄っているのだけど各パスについて詳しくは理解してません。
+
+
 This is a simple compiler for a small subset of the Java(tm)
 programming language. The supported language, Joos0, is the smallest
 of a hierarchy of Java 1.3 subsets. For more language details and an

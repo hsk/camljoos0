@@ -1,30 +1,27 @@
 
 module M = Map.Make (String)
 
-
-type identifier = string
-
-type typeexp = 
+type t = 
   | Void
   | Int
   | Boolean
   | String
-  | Class of identifier
+  | Class of string
   | Null
 
 type field_type =
-    { field_type     : typeexp;
-      field_name     : identifier; }
+    { field_type     : t;
+      field_name     : string; }
 
 type method_type =
-    { method_result   : typeexp;
-      method_name     : identifier;
-      method_formals  : typeexp list; }
+    { method_result   : t;
+      method_name     : string;
+      method_formals  : t list; }
 
-type constructor_type = identifier * typeexp list
+type constructor_type = string * t list
 
 type class_type =
-    { class_name        : identifier;
+    { class_name        : string;
       class_fields      : field_type list;
       class_constructor : constructor_type;
 (*    class_main        : method_type option;*)
@@ -40,7 +37,7 @@ let dots_to_slashes s =
 
 let cname_to_sig cn = dots_to_slashes cn
 
-let rec typeexp_to_string = function
+let rec t_to_string = function
   | Void    -> "V"
   | Int     -> "I"
   | Boolean -> "Z"
@@ -48,10 +45,10 @@ let rec typeexp_to_string = function
   | Class c -> (*cname_to_sig*) c
   | Null    -> raise (Error.InternalCompilerError "The null type has no signature")
 
-let rec typeexp_to_sig t = match t with
+let rec t_to_sig t = match t with
   | Void
   | Int
-  | Boolean -> typeexp_to_string t
+  | Boolean -> t_to_string t
   | String
-  | Class _ -> "L" ^ (cname_to_sig (typeexp_to_string t)) ^ ";"
+  | Class _ -> "L" ^ (cname_to_sig (t_to_string t)) ^ ";"
   | Null    -> raise (Error.InternalCompilerError "The null type has no signature")

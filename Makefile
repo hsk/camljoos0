@@ -62,11 +62,13 @@ EXCL_DIRS := doc
 # (ie, with source code in src/<module>.ml)
 MODS := error ast types \
         parser lexer \
+        utils \
         env \
-        linking \
+        link \
         typing \
-        constants \
+        constfold \
         res \
+        inst \
         codegen \
         limits \
         emit \

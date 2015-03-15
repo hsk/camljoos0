@@ -1,12 +1,12 @@
-type identifier = { identifier_pos : Lexing.position; identifier : string } 
+type id = { id_pos : Lexing.position; id : string } 
 
-type typeexp = { typeexp_pos : Lexing.position; typeexp : typeexp_desc }
-and typeexp_desc =
+type t = { t_pos : Lexing.position; t : t_desc }
+and t_desc =
   | Void
   | Int
   | Boolean
   | String
-  | Class of identifier
+  | Class of id
 
 type binop =
   | Add
@@ -32,8 +32,8 @@ type unop =
 
 type lvalue = { lvalue_pos: Lexing.position; lvalue: lvalue_desc }
 and lvalue_desc =
-  | Local of identifier
-  | Field of identifier
+  | Local of id
+  | Field of id
 
 type exp = { exp_pos: Lexing.position; exp: exp_desc }
 and exp_desc =
@@ -44,8 +44,8 @@ and exp_desc =
   | BooleanConst of bool
   | Null
   | This
-  | Invoke of exp * identifier * exp list
-  | New of identifier * exp list
+  | Invoke of exp * id * exp list
+  | New of id * exp list
   | Lvalue of lvalue
   | Assignment of lvalue * exp
   | Print of exp
@@ -66,26 +66,25 @@ and return_stm_desc =
   | VoidReturn
   | ValueReturn of exp
 
-type formal_param = typeexp * identifier
-type local_decl   = typeexp * identifier * exp
+type formal_param = t * id
+type local_decl   = t * id * exp
 
 type body =
-    { formals    : formal_param list;
-      locals     : local_decl list;
-      statements : stm list;
-      return     : return_stm; }
+    { formals : formal_param list;
+      locals  : local_decl list;
+      stms    : stm list;
+      return  : return_stm; }
 
 type field_decl = 
-  | Method of typeexp * identifier * body
-  | Constructor of identifier * body
+  | Method of t * id * body
+  | Constructor of id * body
   | Main of body
-  | Field of typeexp * identifier * exp option
+  | Field of t * id * exp option
 
 type class_decl	=
     {
-      source_file       : string;
-      class_name        : identifier;
-      class_fields      : field_decl list;
+      class_file_name : string;
+      class_name      : id;
+      class_fields    : field_decl list;
     }
 
-type program = class_decl list
