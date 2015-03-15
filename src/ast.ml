@@ -67,15 +67,15 @@ and return_stm_desc =
   | ValueReturn of exp
 
 type formal_param = t * id
-type local_decl   = t * id * exp
+type local   = t * id * exp
 
 type body =
     { formals : formal_param list;
-      locals  : local_decl list;
+      locals  : local list;
       stms    : stm list;
       return  : return_stm; }
 
-type field_decl = 
+type field = 
   | Method of t * id * body
   | Constructor of id * body
   | Main of body
@@ -85,6 +85,6 @@ type class_decl	=
     {
       cfilename : string;
       cname      : id;
-      cfields    : field_decl list;
+      cfields    : field list;
     }
 

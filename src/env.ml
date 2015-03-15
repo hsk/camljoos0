@@ -48,14 +48,13 @@ let f_constructor = function
   | _ -> assert false
 
 let f_method menv = function
-  | Method(t,method_name,method_body) ->
-    if M.mem method_name.id menv then 
-      Error.error method_name.id_pos
-        "The method '%s' is already defined." method_name.id;
+  | Method(t, name, body) ->
+    if M.mem name.id menv then 
+      Error.error name.id_pos "The method '%s' is already defined." name.id;
     let mdecl   = { Types.method_result  = f_t t;
-                    method_name    = method_name.id;
-                    method_formals = f_body method_body; } in
-    (mdecl, M.add method_name.id mdecl menv)
+                    method_name    = name.id;
+                    method_formals = f_body body; } in
+    (mdecl, M.add name.id mdecl menv)
   | _ -> assert false
 
 let f prog =

@@ -13,14 +13,14 @@
 type id = Ast.id
 type t = Types.t
 type formal_param = t * id * int (*NEW*)
-(*type local_decl   = t * id (* * exp *) * int (*NEW*)*)
+(*type local   = t * id (* * exp *) * int (*NEW*)*)
 
 type body =
     { formals    : formal_param list;
-(*    locals     : local_decl list; *)
+(*    locals     : local list; *)
       body       : Inst.instruction list; }
 
-type field_decl =
+type field =
   | Method of t * id * body * string
   | Main of body
   | Constructor of id * body * string
@@ -29,13 +29,13 @@ type field_decl =
 type class_decl =
     { cfilename     : string;
       cname           : id;
-      cfields         : field_decl list;
+      cfields         : field list;
       csig : string (*NEW*) }
 
 let f_method_sig_known msig numargs numreturns =
-  { Inst.method_sig      = msig;
-    Inst.method_nargs    = numargs;
-    Inst.method_nreturns = numreturns
+  { Inst.msig      = msig;
+    Inst.m_nargs    = numargs;
+    Inst.m_nreturns = numreturns
   }
 
 let f_method_sig id base m =
@@ -68,7 +68,7 @@ let f_cond = function
 
 type env = { tenv             : Types.class_type Types.M.t;
              class_type       : Types.class_type;
-             nonstatic_fields : Res.field_decl list }
+             nonstatic_fields : Res.field list }
 
 let rec f_lvalue_read env {Res.lvalue;lvalue_type} =
   match lvalue with

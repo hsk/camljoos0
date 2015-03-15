@@ -155,7 +155,7 @@ goal :
 
     class_body :
       |  L_BRACE
-         field_declaration*
+         fieldaration*
          constructor_declaration
          PUBLIC STATIC VOID MAIN main_method_params throws_clause
            L_BRACE NEW name L_PAREN R_PAREN SEMICOLON R_BRACE
@@ -167,7 +167,7 @@ goal :
            let body = make_body ([],[],[new_stm],new_retstm) in
            ($2,$3,Some body,$17) }
       |  L_BRACE
-         field_declaration*
+         fieldaration*
          constructor_declaration (* no main decl *)
          method_declaration*
          R_BRACE
@@ -175,7 +175,7 @@ goal :
 
       (* ********** Field declarations ********** *)
 
-      field_declaration :
+      fieldaration :
         |  PROTECTED t IDENTIFIER variable_initializer? SEMICOLON
            { let id = make_id $startpos $3 in
              make_field ($2,id,$4) }

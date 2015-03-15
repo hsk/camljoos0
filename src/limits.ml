@@ -4,16 +4,16 @@
 type id = Ast.id
 type t = Types.t
 type formal_param = t * id * int (*NEW*)
-(*type local_decl   = t * id (* * exp option*) * int (*NEW*)*)
+(*type local   = t * id (* * exp option*) * int (*NEW*)*)
 
 type body =
     { limits       : int * int; (*NEW*)
       (*formals    : formal_param list;*)
-      (*locals     : local_decl list;*)
+      (*locals     : local list;*)
       body         : Inst.instruction list;
     }
 
-type field_decl =
+type field =
   | Constructor of id * body * string
   | Method of t * id * body * string
   | Main of body
@@ -22,7 +22,7 @@ type field_decl =
 type class_decl =
     { cfilename      : string;
       cname           : id;
-      cfields         : field_decl list;
+      cfields         : field list;
       csig : string (*NEW*) }
 
 
