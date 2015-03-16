@@ -52,6 +52,15 @@ test:
 #ok	cd tests ; java While
 	cd tests ; java Xor
 
+test0:
+	cd test_joos0; ../joos0 *.java
+
+test1:
+	cd test_joos1; ../joos0 *.java
+test2:
+	cd test_joos2; ../joos0 *.java
+test3:
+	cd test_joos3; ../joos0 *.java
 
 # Non-source directories (comma separated, no spaces)
 # Add directories that do not contain ml source files.
