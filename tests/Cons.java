@@ -1,11 +1,4 @@
 public class Cons {
-    protected int first;
-    protected Cons rest;
-
-    public Cons(int first, Cons rest) throws Exception { 
-        this.first = first;
-        this.rest = rest;
-    }
 
     public boolean member(int item) throws Exception { 
         boolean result = false;
@@ -17,4 +10,15 @@ public class Cons {
             result = this.rest.member(item);
         return result;
     }
+
+    protected int first;
+
+
+    public Cons(int first, Cons rest) throws Exception { 
+        this.first = first;
+        this.rest = rest;
+    }
+
+    protected Cons rest;
+
 }

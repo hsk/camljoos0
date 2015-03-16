@@ -28,16 +28,12 @@
   let make_constructor (id, body) = Constructor(id, body)
   let make_field (texp, name, init) = Field(texp,name,init)
 
-  let make_class (name,fields,constructor,main,methods) =
-    let methods = match main with
-      | None -> methods
-      | Some body -> Main(body) :: methods 
-    in
+  let make_class (name,fields) =
     fun cfilename ->
     {
       cfilename = cfilename;
       cname = name;
-      cfields = fields @ constructor :: methods
+      cfields = fields;
     }
 
   let make_source_file p decl =
@@ -150,28 +146,14 @@ goal :
   class_declaration :
     |  PUBLIC CLASS IDENTIFIER class_body
        { let id = make_id $startpos $3 in
-         let (fields,constructor,opt_main,methods) = $4 in
-         make_class (id,fields,constructor,opt_main,methods) }
+         let fields = $4 in
+         make_class (id,fields) }
 
     class_body :
       |  L_BRACE
          fieldaration*
-         constructor_declaration
-         PUBLIC STATIC VOID MAIN main_method_params throws_clause
-           L_BRACE NEW name L_PAREN R_PAREN SEMICOLON R_BRACE
-         method_declaration*
          R_BRACE
-         { let new_exp = make_exp $startpos (New ($12,[])) in (*FIXME: pos?*)
-           let new_stm = make_stm $startpos (Exp new_exp) in (*FIXME: pos?*)
-           let new_retstm = make_retstm $startpos VoidReturn in(*FIXME: pos?*)
-           let body = make_body ([],[],[new_stm],new_retstm) in
-           ($2,$3,Some body,$17) }
-      |  L_BRACE
-         fieldaration*
-         constructor_declaration (* no main decl *)
-         method_declaration*
-         R_BRACE
-         { ($2,$3,None,$4) }
+         { $2 }
 
       (* ********** Field declarations ********** *)
 
@@ -179,14 +161,13 @@ goal :
         |  PROTECTED t IDENTIFIER variable_initializer? SEMICOLON
            { let id = make_id $startpos $3 in
              make_field ($2,id,$4) }
+        | method_declaration { $1 }
+        | constructor_declaration { $1 }
 
       variable_initializer :
         |  ASSIGN exp { $2 }
 
       (* ********** Method declarations ********** *)
-
-      main_method_params :
-        |  L_PAREN STRING L_BRACKET R_BRACKET IDENTIFIER R_PAREN { make_id $startpos $5 }
 
       method_declaration :
         |  PUBLIC t_or_void IDENTIFIER method_params throws_clause method_body
@@ -195,6 +176,13 @@ goal :
              let body = make_body ($4,lvars,stms,retstm) in
              make_method ($2,id,body) }
 
+        | PUBLIC STATIC VOID MAIN main_method_params throws_clause
+           L_BRACE NEW name L_PAREN R_PAREN SEMICOLON R_BRACE
+         { let new_exp = make_exp $startpos (New ($9,[])) in (*FIXME: pos?*)
+           let new_stm = make_stm $startpos (Exp new_exp) in (*FIXME: pos?*)
+           let new_retstm = make_retstm $startpos VoidReturn in(*FIXME: pos?*)
+           let body = make_body ([],[],[new_stm],new_retstm) in
+           Main(body) }
         t_or_void :
           |  VOID { make_t $startpos TVoid }
           |  t { $1 }
@@ -215,6 +203,9 @@ goal :
 
         method_body :
           |  L_BRACE local_variable_declarations statement* return_statement R_BRACE { ($2,$3,$4) }
+
+        main_method_params :
+          |  L_PAREN STRING L_BRACKET R_BRACKET IDENTIFIER R_PAREN { make_id $startpos $5 }
 
       throws_clause :
         |  THROWS EXCEPTION { () }
@@ -272,10 +263,10 @@ goal :
         |  while_statement { $1 }
 
         if_then_statement :
-          |  IF L_PAREN exp R_PAREN statement { make_stm $startpos (IfThen($3,$5)) }
+          |  IF L_PAREN exp R_PAREN statement { make_stm $startpos (If($3,$5,make_stm $startpos Empty)) }
 
         if_then_else_statement :
-          |  IF L_PAREN exp R_PAREN statement_no_short_if ELSE statement { make_stm $startpos (IfThenElse($3,$5,$7)) }
+          |  IF L_PAREN exp R_PAREN statement_no_short_if ELSE statement { make_stm $startpos (If($3,$5,$7)) }
 
         while_statement :
           |  WHILE L_PAREN exp R_PAREN statement { make_stm $startpos (While($3,$5)) }
@@ -286,7 +277,7 @@ goal :
         |  while_statement_no_short_if { $1 }
 
         if_then_else_statement_no_short_if :
-          |  IF L_PAREN exp R_PAREN statement_no_short_if ELSE statement_no_short_if { make_stm $startpos (IfThenElse($3,$5,$7)) }
+          |  IF L_PAREN exp R_PAREN statement_no_short_if ELSE statement_no_short_if { make_stm $startpos (If($3,$5,$7)) }
 
         while_statement_no_short_if :
           |  WHILE L_PAREN exp R_PAREN statement_no_short_if { make_stm $startpos (While($3,$5)) }

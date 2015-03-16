@@ -62,7 +62,6 @@ EXCL_DIRS := doc
 # (ie, with source code in src/<module>.ml)
 MODS := error ast types \
         parser lexer \
-        utils \
         env \
         link \
         typing \

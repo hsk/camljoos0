@@ -51,3 +51,7 @@ let rec t_to_sig t = match t with
   | TString
   | TClass _ -> "L" ^ (cname_to_sig (show_t t)) ^ ";"
   | TNull    -> raise (Error.InternalCompilerError "The null type has no signature")
+
+let opt f = function
+  | None -> None
+  | Some a -> Some(f a)

@@ -47,8 +47,7 @@ and exp_desc =
 type stm = { stm_pos: Lexing.position; stm: stm_desc }
 and stm_desc =
   | Exp of exp
-  | IfThen of exp * stm
-  | IfThenElse of exp * stm * stm
+  | If of exp * stm * stm
   | While of exp * stm
   | Empty
   | Block of stm list

@@ -32,11 +32,8 @@ type class_decl =
     cfields   : field list;
     csig      : string (*NEW*) }
 
-let mk_msig msig numargs numreturns =
-  { Inst.msig       = msig;
-    Inst.m_nargs    = numargs;
-    Inst.m_nreturns = numreturns
-  }
+let mk_msig msig m_nargs m_nreturns =
+  { Inst.msig; m_nargs; m_nreturns}
 
 let f_msig id base m =
   let msig =
@@ -49,7 +46,7 @@ let f_msig id base m =
   mk_msig msig (List.length m.mprms_t) (if m.mresult_t = TVoid then 0 else 1)
 
 let f_constructor_sig base (name,prms) =
-    let msig    =
+    let msig =
       let basesig = cname_to_sig base in
       let prmsigs = List.map t_to_sig prms in
       basesig ^ "/<init>(" ^ (String.concat "" prmsigs) ^ ")V"
@@ -67,9 +64,9 @@ let f_cond = function
   | Typing.Ane -> Inst.Ane
   | _ -> raise (Error.InternalCompilerError "Illegal cond in binary operation")
 
-type env = { tenv             : class_type M.t;
-             class_type       : class_type;
-             nonstatic_fields : Res.field list }
+type env = { tenv       : class_type M.t;
+             class_type : class_type;
+             fields     : Res.field list }
 
 let rec f_lval_read env {Res.lval;lt} =
   match lval with
@@ -220,7 +217,7 @@ let rec f_stm env {Res.stm} =
     | TVoid -> ie
     | _ -> ie @ [Inst.Ipop]
     end
-  | Res.IfThen (e,s) ->
+  | Res.If (e,s, {Res.stm=Res.Empty}) ->
     let falsel = Inst.make_label "false" in
     begin
       f_exp env e @
@@ -229,7 +226,7 @@ let rec f_stm env {Res.stm} =
     Inst.Ilabel falsel ::
       []
     end
-  | Res.IfThenElse (e,s1,s2) ->
+  | Res.If (e,s1,s2) ->
     let falsel = Inst.make_label "false" in
     let endifl = Inst.make_label "endif" in
     begin
@@ -287,14 +284,8 @@ let f_body env {Res.locals;stms;return;prms} =
   { prms; body = locals @ stms @ return }
 
 let f_field env = function
-  | Res.Method(return_type, name, body, signature) ->
-    Method (return_type, name, f_body env  body,  signature)
-  | Res.Constructor(name, body, signature) ->
-    let body = f_body env body in
-    let supercall =
-      [ Inst.Iaload 0;
-        Inst.Iinvokespecial (mk_msig "java/lang/Object/<init>()V" 0 0)]
-    in
+  | Res.Method(t, name, body, jsig) -> Method (t, name, f_body env  body,  jsig)
+  | Res.Constructor(name, body, jsig) ->
     let field_init =
         List.fold_right (fun field insts ->
           begin match field with
@@ -312,17 +303,21 @@ let f_field env = function
             end
           | _ -> insts
           end
-        ) env.nonstatic_fields []
+        ) env.fields []
     in
-    let insts = supercall @ field_init @ body.body in
-    Constructor (name, { body with body = insts }, signature)
+    let body = f_body env body in
+    let insts = 
+      Inst.Iaload 0 ::
+      Inst.Iinvokespecial (mk_msig "java/lang/Object/<init>()V" 0 0) ::
+      field_init @ body.body in
+    Constructor (name, { body with body = insts }, jsig)
   | Res.Main body -> Main (f_body env body)
   | Res.Field (t, name, _, jsig) -> Field(t, name, jsig)
 
 let f tenv prog =
   List.map (fun {Res.cname;cfields;csig;cfilename} ->
     let class_type = Env.lookup_env tenv "class" cname.Ast.id cname.Ast.id_pos in
-    let env = { tenv; class_type; nonstatic_fields = cfields } in
+    let env = { tenv; class_type; fields = cfields } in
     { 
       cfilename;
       cname;
