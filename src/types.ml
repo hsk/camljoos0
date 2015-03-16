@@ -2,30 +2,29 @@
 module M = Map.Make (String)
 
 type t = 
-  | Void
-  | Int
-  | Boolean
-  | String
-  | Class of string
-  | Null
+  | TVoid
+  | TInt
+  | TBool
+  | TString
+  | TClass of string
+  | TNull
 
 type ft =
-    { ft     : t;
-      field_name     : string; }
+    { ft      : t;
+      ft_name : string; }
 
 type mt =
-    { mresult : t;
-      mname   : string;
-      mprms   : t list; }
+    { mresult_t : t;
+      mname_t   : string;
+      mprms_t   : t list; }
 
 type constructor_t = string * t list
 
 type class_type =
-    { cname      : string;
-      cfts       : ft list;
-      cconstruct : constructor_t;
-    (*class_main : mt option;*)
-      cmts       : mt list; }
+    { cname_t      : string;
+      cfield_ts    : ft list;
+      cconstruct_t : constructor_t;
+      cmethod_ts   : mt list; }
 
 (* map from identifier to named_type *)
 (* type type_env = class_type Env.t *)
@@ -37,18 +36,18 @@ let dots_to_slashes s =
 
 let cname_to_sig cn = dots_to_slashes cn
 
-let rec t_to_string = function
-  | Void    -> "V"
-  | Int     -> "I"
-  | Boolean -> "Z"
-  | String  -> "java.lang.String"
-  | Class c -> (*cname_to_sig*) c
-  | Null    -> raise (Error.InternalCompilerError "The null type has no signature")
+let rec show_t = function
+  | TVoid    -> "V"
+  | TInt     -> "I"
+  | TBool    -> "Z"
+  | TString  -> "java.lang.String"
+  | TClass c -> (*cname_to_sig*) c
+  | TNull    -> raise (Error.InternalCompilerError "The null type has no signature")
 
 let rec t_to_sig t = match t with
-  | Void
-  | Int
-  | Boolean -> t_to_string t
-  | String
-  | Class _ -> "L" ^ (cname_to_sig (t_to_string t)) ^ ";"
-  | Null    -> raise (Error.InternalCompilerError "The null type has no signature")
+  | TVoid
+  | TInt
+  | TBool    -> show_t t
+  | TString
+  | TClass _ -> "L" ^ (cname_to_sig (show_t t)) ^ ";"
+  | TNull    -> raise (Error.InternalCompilerError "The null type has no signature")

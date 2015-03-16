@@ -45,4 +45,3 @@ let error pos fmt =
     raise ErrorExit
 
   ) buf fmt
-

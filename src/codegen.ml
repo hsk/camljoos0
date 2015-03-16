@@ -9,16 +9,16 @@
     the expression is non-void, or leaves the stack height
     unchanged if the type of the expression is void.
 *)
-
+open Types
 type id = Ast.id
-type t = Types.t
+
 type prm = t * id * int (*NEW*)
 (*type local   = t * id (* * exp *) * int (*NEW*)*)
 
 type body =
     { prms    : prm list;
-(*    locals     : local list; *)
-      body       : Inst.instruction list; }
+    (*locals  : local list; *)
+      body    : Inst.instruction list; }
 
 type field =
   | Method of t * id * body * string
@@ -27,10 +27,10 @@ type field =
   | Field of t * id (*field_init : exp option;*) * string
 
 type class_decl =
-    { cfilename       : string;
-      cname           : id;
-      cfields         : field list;
-      csig : string (*NEW*) }
+  { cfilename : string;
+    cname     : id;
+    cfields   : field list;
+    csig      : string (*NEW*) }
 
 let mk_msig msig numargs numreturns =
   { Inst.msig       = msig;
@@ -38,22 +38,23 @@ let mk_msig msig numargs numreturns =
     Inst.m_nreturns = numreturns
   }
 
-let f_method_sig id base m =
-  let mname   = id.Ast.id in
-  let basesig = Types.cname_to_sig base in
-  let prmsigs = List.map Types.t_to_sig m.Types.mprms in
-  let ressig  = Types.t_to_sig m.Types.mresult in
-  let numargs = List.length m.Types.mprms in
-  let numreturns = if m.Types.mresult = Types.Void then 0 else 1 in
-  let msig = basesig ^ "/" ^ mname ^ "(" ^ (String.concat "" prmsigs) ^ ")" ^ ressig in
-  mk_msig msig numargs numreturns
+let f_msig id base m =
+  let msig =
+    let mname   = id.Ast.id in
+    let basesig = cname_to_sig base in
+    let prmsigs = List.map t_to_sig m.mprms_t in
+    let ressig  = t_to_sig m.mresult_t in
+    basesig ^ "/" ^ mname ^ "(" ^ (String.concat "" prmsigs) ^ ")" ^ ressig
+  in
+  mk_msig msig (List.length m.mprms_t) (if m.mresult_t = TVoid then 0 else 1)
 
 let f_constructor_sig base (name,prms) =
-    let basesig = Types.cname_to_sig base in
-    let prmsigs = List.map Types.t_to_sig prms in
-    let numargs = List.length prms in
-    let msig    = basesig ^ "/<init>(" ^ (String.concat "" prmsigs) ^ ")V" in
-    mk_msig msig numargs 0
+    let msig    =
+      let basesig = cname_to_sig base in
+      let prmsigs = List.map t_to_sig prms in
+      basesig ^ "/<init>(" ^ (String.concat "" prmsigs) ^ ")V"
+    in
+    mk_msig msig (List.length prms) 0
 
 let f_cond = function
   | Typing.Eq -> Inst.Eq
@@ -66,24 +67,24 @@ let f_cond = function
   | Typing.Ane -> Inst.Ane
   | _ -> raise (Error.InternalCompilerError "Illegal cond in binary operation")
 
-type env = { tenv             : Types.class_type Types.M.t;
-             class_type       : Types.class_type;
+type env = { tenv             : class_type M.t;
+             class_type       : class_type;
              nonstatic_fields : Res.field list }
 
 let rec f_lval_read env {Res.lval;lt} =
   match lval with
   | Res.Field (id, _) -> 
     let name = id.Ast.id in
-    let jsig = Types.t_to_sig lt in
-    let csig = env.class_type.Types.cname in
+    let jsig = t_to_sig lt in
+    let csig = env.class_type.cname_t in
     [Inst.Iaload 0;
      Inst.Igetfield (csig ^ "/" ^ name ^ " " ^ jsig)]
   | Res.Local (id, i) -> 
     begin match lt with
-    | Types.Int
-    | Types.Boolean -> [Inst.Iiload i] (* integer load *)
-    | Types.String 
-    | Types.Class _ -> [Inst.Iaload i] (* address load *)
+    | TInt
+    | TBool -> [Inst.Iiload i] (* integer load *)
+    | TString 
+    | TClass _ -> [Inst.Iaload i] (* address load *)
     | _ -> raise (Error.InternalCompilerError "Illegal type of lval")
     end
 
@@ -91,17 +92,17 @@ and f_lval_write env {Res.lval;lt} =
   match lval with
   | Res.Field (id,base) ->
     let name = id.Ast.id in
-    let jsig = Types.t_to_sig lt in
-    let csig = env.class_type.Types.cname in
+    let jsig = t_to_sig lt in
+    let csig = env.class_type.cname_t in
     [Inst.Iaload(0);
      Inst.Iswap;
      Inst.Iputfield (csig ^ "/" ^ name ^ " " ^ jsig)]
   | Res.Local (id,i) -> 
     begin match lt with
-    | Types.Int
-    | Types.Boolean  -> [Inst.Iistore i] (* integer store *)
-    | Types.String 
-    | Types.Class _  -> [Inst.Iastore i] (* address store *)
+    | TInt
+    | TBool  -> [Inst.Iistore i] (* integer store *)
+    | TString 
+    | TClass _  -> [Inst.Iastore i] (* address store *)
     | _ -> raise (Error.InternalCompilerError "Illegal type of lval")
     end
 
@@ -111,14 +112,11 @@ and f_exp env {Res.exp;e_t} =
     f_exp env e1 @
     f_exp env e2 @
     begin match op with
-    | Typing.Add    -> [Inst.Iiadd]
-    | Typing.Minus  -> [Inst.Iisub]
-    | Typing.Times  -> [Inst.Iimul]
-    | Typing.Divide -> [Inst.Iidiv]
-    | Typing.Modulo -> [Inst.Iirem]
-    | Typing.And    -> [Inst.Iiand]
-    | Typing.Or     -> [Inst.Iior]
-    | Typing.Xor    -> [Inst.Iixor]
+    | Typing.Add -> [Inst.Iiadd] | Typing.Sub -> [Inst.Iisub]
+    | Typing.Mul -> [Inst.Iimul] | Typing.Div -> [Inst.Iidiv]
+    | Typing.Mod -> [Inst.Iirem] | Typing.And -> [Inst.Iiand]
+    | Typing.Or  -> [Inst.Iior]  | Typing.Xor -> [Inst.Iixor]
+    
     | Typing.Eq  | Typing.Ne    
     | Typing.Lt  | Typing.Le
     | Typing.Gt  | Typing.Ge
@@ -132,7 +130,7 @@ and f_exp env {Res.exp;e_t} =
         Inst.Ildc_int 1l;
         Inst.Ilabel endl
       ]
-    | Typing.Concat ->
+    | Typing.Cat ->
       [ Inst.Iinvokevirtual (mk_msig 
           "java/lang/String/concat(Ljava/lang/String;)Ljava/lang/String;" 1 1)
       ]
@@ -172,11 +170,11 @@ and f_exp env {Res.exp;e_t} =
     begin
       f_exp env e @
       List.concat (List.map (fun e -> f_exp env e) es) @
-      Inst.Iinvokevirtual (f_method_sig id (Types.t_to_string e.Res.e_t) mt) ::
+      Inst.Iinvokevirtual (f_msig id (show_t e.Res.e_t) mt) ::
       []
     end
   | Res.New (_, es, c) ->
-    let typesig = Types.t_to_string e_t in
+    let typesig = show_t e_t in
     begin
       Inst.Inew typesig ::
       Inst.Idup ::
@@ -194,10 +192,10 @@ and f_exp env {Res.exp;e_t} =
   | Res.Print e ->
     let prmt =
       match e.Res.e_t with
-      | Types.Int -> "I"
-      | Types.Boolean -> "Z"
-      | Types.String
-      | Types.Class _ -> "Ljava/lang/Object;"
+      | TInt -> "I"
+      | TBool -> "Z"
+      | TString
+      | TClass _ -> "Ljava/lang/Object;"
       | _ -> raise (Error.InternalCompilerError "Illegal print type")
     in
     let msig = "java/io/PrintStream/print(" ^ prmt ^ ")V" in
@@ -219,7 +217,7 @@ let rec f_stm env {Res.stm} =
   | Res.Exp e ->
     let ie = f_exp env e in
     begin match e.Res.e_t with
-    | Types.Void -> ie
+    | TVoid -> ie
     | _ -> ie @ [Inst.Ipop]
     end
   | Res.IfThen (e,s) ->
@@ -265,22 +263,22 @@ let f_rstm env {Res.rstm} =
   | Res.ValueReturn e ->
     f_exp env e @
     begin match e.Res.e_t with
-    | Types.Int
-    | Types.Boolean -> [Inst.Iireturn]
-    | Types.String
-    | Types.Class _
-    | Types.Null -> [Inst.Iareturn]
-    | Types.Void -> raise (Error.InternalCompilerError "Illegal type of return expression")
+    | TInt
+    | TBool -> [Inst.Iireturn]
+    | TString
+    | TClass _
+    | TNull -> [Inst.Iareturn]
+    | TVoid -> raise (Error.InternalCompilerError "Illegal type of return expression")
     end
 
-let f_local env (typ, id, exp, offset) =
-  match typ with
-  | Types.Int
-  | Types.Boolean -> f_exp env exp @ [Inst.Iistore offset]  (* integer store *)
-  | Types.Class _
-  | Types.String -> f_exp env exp @ [Inst.Iastore offset]  (* address store *)
-  | Types.Void
-  | Types.Null -> raise (Error.InternalCompilerError "Illegal type of local initializer")
+let f_local env (t, id, exp, offset) =
+  match t with
+  | TInt
+  | TBool -> f_exp env exp @ [Inst.Iistore offset]  (* integer store *)
+  | TClass _
+  | TString -> f_exp env exp @ [Inst.Iastore offset]  (* address store *)
+  | TVoid
+  | TNull -> raise (Error.InternalCompilerError "Illegal type of local initializer")
 
 let f_body env {Res.locals;stms;return;prms} =
   let locals = List.concat (List.map (f_local env) locals) in
@@ -298,21 +296,21 @@ let f_field env = function
         Inst.Iinvokespecial (mk_msig "java/lang/Object/<init>()V" 0 0)]
     in
     let field_init =
-        List.fold_right (fun field flist ->
+        List.fold_right (fun field insts ->
           begin match field with
-          | Res.Field(t,name,init,jsig) ->
+          | Res.Field(t,_,init,jsig) ->
             begin match init with
-            | None -> flist
+            | None -> insts
             | Some e -> 
-              let fsig = jsig ^ " " ^ (Types.t_to_sig t) in
+              let fsig = jsig ^ " " ^ (t_to_sig t) in
               begin
                 Inst.Iaload 0 ::
                 f_exp env e @
                 Inst.Iputfield fsig ::
-                flist
+                insts
               end
             end
-          | _ -> flist
+          | _ -> insts
           end
         ) env.nonstatic_fields []
     in

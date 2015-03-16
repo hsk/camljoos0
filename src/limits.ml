@@ -26,9 +26,14 @@ type class_decl =
       csig      : string (*NEW*) }
 
 
-module LabelMap = Map.Make(String)
+module M = Map.Make(String)
 
-let error msg = raise (Error.InternalCompilerError msg)
+let error fmt = 
+  let buf = Buffer.create 16 in
+  Format.kfprintf (fun ppf ->
+    Format.fprintf ppf "@?";
+    raise (Error.InternalCompilerError (Buffer.contents buf))
+  ) (Format.formatter_of_buffer buf) fmt
 
 let f_body {Codegen.prms;body} =
 
@@ -36,23 +41,23 @@ let f_body {Codegen.prms;body} =
   let lbl2cont_insts =
     let rec loop env = function
       | []                     -> env
-      | Inst.Ilabel lbl::insts -> loop (LabelMap.add lbl insts env) insts
+      | Inst.Ilabel lbl::insts -> loop (M.add lbl insts env) insts
       | _::insts               -> loop env insts
     in
-    loop LabelMap.empty body
+    loop M.empty body
   in
 
   (* graph traversal of control-flow graph *)
   let rec loop s v env = function
     | [] -> (v, env)
     | Inst.Ilabel lbl :: insts ->
-      if not (LabelMap.mem lbl env) then loop s v (LabelMap.add lbl s env) insts else
-      let h = LabelMap.find lbl env in
-      if h != s then error (Printf.sprintf "Stack height does not match at %s: (%d != %d)" lbl h s);
+      if not (M.mem lbl env) then loop s v (M.add lbl s env) insts else
+      let h = M.find lbl env in
+      if h != s then error "Stack height does not match at %s: (%d != %d)" lbl h s;
       loop s v env insts
     | inst :: insts ->
       let s = s + (Inst.stack_change inst) in
-      if s < 0 then error (Printf.sprintf "Negative stack height at %s (%d)" (Inst.to_asm inst) s);
+      if s < 0 then error "Negative stack height at %s (%d)" (Inst.to_asm inst) s;
       let v = max v s in
       (* then continue along path *)
       let (v, env) = if not (Inst.can_fall_through inst) then (v, env) else loop s v env insts in
@@ -60,15 +65,15 @@ let f_body {Codegen.prms;body} =
       begin match Inst.can_jump inst with
       | None -> (v, env)
       | Some lbl ->
-        if not (LabelMap.mem lbl env) then
-          loop s v (LabelMap.add lbl s env) (LabelMap.find lbl lbl2cont_insts) else
+        if not (M.mem lbl env) then
+          loop s v (M.add lbl s env) (M.find lbl lbl2cont_insts) else
         (* been here: check consistency *)
-        let h = LabelMap.find lbl env in
-        if h != s then error (Printf.sprintf "Stack height does not match at %s: (%d != %d)" lbl h s);
+        let h = M.find lbl env in
+        if h != s then error "Stack height does not match at %s: (%d != %d)" lbl h s;
         (v, env)
       end
   in
-  let (max_stack, _) = loop 0 0 LabelMap.empty body in
+  let (max_stack, _) = loop 0 0 M.empty body in
   let max_locals = 
     List.fold_left (fun v i ->
       match Inst.local_access i with

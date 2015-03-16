@@ -196,7 +196,7 @@ goal :
              make_method ($2,id,body) }
 
         t_or_void :
-          |  VOID { make_t $startpos Void }
+          |  VOID { make_t $startpos TVoid }
           |  t { $1 }
 
         method_params :
@@ -246,12 +246,12 @@ goal :
         |  reference_type { $1 }
 
         primitive_type :
-          |  BOOLEAN { make_t $startpos Boolean }
-          |  INT { make_t $startpos Int }
+          |  BOOLEAN { make_t $startpos TBoolean }
+          |  INT { make_t $startpos TInt }
 
         reference_type :
-          |  name { make_t $startpos (Class $1) }
-          |  STRING { make_t $startpos String }
+          |  name { make_t $startpos (TClass $1) }
+          |  STRING { make_t $startpos TString }
 
       (* ********** Blocks and stms ********** *)
 
@@ -433,15 +433,15 @@ goal :
                     |  add_exp PLUS mul_exp { make_exp $startpos (Binop($1,Add,$3)) }
                     |  add_exp PLUS L_PAREN CHAR R_PAREN unary_exp
                        { let unexp = make_exp $startpos (Unop(CharToString,$6)) in
-                         make_exp $startpos (Binop($1,Concat,unexp)) }
+                         make_exp $startpos (Binop($1,Cat,unexp)) }
                     |  add_exp MINUS mul_exp
-                       { make_exp $startpos (Binop($1,Minus,$3)) }
+                       { make_exp $startpos (Binop($1,Sub,$3)) }
 
                     mul_exp :
                       |  unary_exp { $1 }
-                      |  mul_exp STAR unary_exp { make_exp $startpos (Binop($1,Times,$3)) }
-                      |  mul_exp DIV unary_exp { make_exp $startpos (Binop($1,Divide,$3)) }
-                      |  mul_exp MOD unary_exp { make_exp $startpos (Binop($1,Modulo,$3)) }
+                      |  mul_exp STAR unary_exp { make_exp $startpos (Binop($1,Mul,$3)) }
+                      |  mul_exp DIV unary_exp { make_exp $startpos (Binop($1,Div,$3)) }
+                      |  mul_exp MOD unary_exp { make_exp $startpos (Binop($1,Mod,$3)) }
 
                       unary_exp :
                         |  primary { $1 }

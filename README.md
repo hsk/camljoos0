@@ -29,8 +29,8 @@ CamlJoos0改
     - parser.ml lexer.ml パーサと字句解析
 
     - コンパイラパス
-        - env 型環境の作成
-        - link リンク Ast.typeexpをTypes.typeexpに変換しつつ定義チェックをする。
+        - env Astをトラバースして型環境を作成する
+        - link リンク Astの型から位置情報を取り払う変換をしつつ定義チェックをする。
         - typing 型チェック
         - constfold 定数畳み込み最適化
         - res リソース

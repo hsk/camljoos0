@@ -2,20 +2,20 @@ type id = { id_pos : Lexing.position; id : string }
 
 type t = { t_pos : Lexing.position; t : t_desc }
 and t_desc =
-  | Void
-  | Int
-  | Boolean
-  | String
-  | Class of id
+  | TVoid
+  | TInt
+  | TBoolean
+  | TString
+  | TClass of id
 
 type binop =
-  | Add | Minus
-  | Times | Divide | Modulo
-  | Eq | Ne
-  | Lt | Le
-  | Gt | Ge
+  | Add | Sub
+  | Mul | Div | Mod
+  | Eq  | Ne
+  | Lt  | Le
+  | Gt  | Ge
   | And | Or | Xor
-  | Concat (* // Only created for + (char) *)
+  | Cat (* // Only created for + (char) *)
 
 type unop =
   | Negate     (*minus*)
@@ -58,14 +58,14 @@ and rstm_desc =
   | VoidReturn
   | ValueReturn of exp
 
-type prm = t * id
-type local   = t * id * exp
+type prm   = t * id
+type local = t * id * exp
 
 type body =
-    { prms    : prm list;
-      locals  : local list;
-      stms    : stm list;
-      return  : rstm; }
+    { prms   : prm list;
+      locals : local list;
+      stms   : stm list;
+      return : rstm; }
 
 type field = 
   | Method of t * id * body
@@ -74,9 +74,9 @@ type field =
   | Field of t * id * exp option
 
 type class_decl	=
-    {
-      cfilename : string;
-      cname      : id;
-      cfields    : field list;
-    }
+  {
+    cfilename : string;
+    cname     : id;
+    cfields   : field list;
+  }
 

@@ -15,13 +15,11 @@ let parse_file file_name =
     with
     | End_of_file
     | Parser.Error ->
-      let curr_pos = lexbuf.Lexing.lex_curr_p in
       close_in inch;
-      Error.error curr_pos "Parse error"
+      Error.error lexbuf.Lexing.lex_curr_p "Parse error"
     | Failure msg ->
-      let curr_pos = lexbuf.Lexing.lex_curr_p in
       close_in inch;
-      Error.error curr_pos "%s" msg
+      Error.error lexbuf.Lexing.lex_curr_p "%s" msg
   with
     | End_of_file ->
       Error.error Lexing.dummy_pos "Parse error"
@@ -42,8 +40,8 @@ let compile filenames =
     let tenv = apply Env.f            prog "environment building" in
     let last = apply (Link.f tenv)    prog "linking/name resolving" in
     let tast = apply (Typing.f tenv)  last "type checking" in
-    let cast = apply Constfold.f      tast "constant folding" in
-    let rast = apply Res.f            cast "resource analyzing" in
+    let tast = apply Constfold.f      tast "constant folding" in
+    let rast = apply Res.f            tast "resource analyzing" in
     let cast = apply (Codegen.f tenv) rast "code generation" in
     let last = apply Limits.f         cast "limit analyzing and verification" in
     let ()   = apply Emit.f           last "code emitting" in
