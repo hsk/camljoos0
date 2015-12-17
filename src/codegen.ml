@@ -17,6 +17,7 @@ type prm = t * id * int (*NEW*)
 
 type body =
     { prms    : prm list;
+      throws  : string list;
     (*locals  : local list; *)
       body    : Inst.instruction list; }
 
@@ -277,11 +278,11 @@ let f_local env (t, id, exp, offset) =
   | TVoid
   | TNull -> raise (Error.InternalCompilerError "Illegal type of local initializer")
 
-let f_body env {Res.locals;stms;return;prms} =
+let f_body env {Res.locals;throws;stms;return;prms} =
   let locals = List.concat (List.map (f_local env) locals) in
   let stms   = List.concat (List.map (f_stm env) stms) in
   let return = f_rstm env return in
-  { prms; body = locals @ stms @ return }
+  { prms; throws; body = locals @ stms @ return }
 
 let f_field env = function
   | Res.Method(t, name, body, jsig) -> Method (t, name, f_body env  body,  jsig)

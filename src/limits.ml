@@ -8,6 +8,7 @@ type prm = t * id * int (*NEW*)
 
 type body =
     { limits : int * int; (*NEW*)
+      throws : string list;
     (*prms   : prm list;*)
     (*locals : local list;*)
       body   : Inst.instruction list;
@@ -35,7 +36,7 @@ let error fmt =
     raise (Error.InternalCompilerError (Buffer.contents buf))
   ) (Format.formatter_of_buffer buf) fmt
 
-let f_body {Codegen.prms;body} =
+let f_body {Codegen.prms;throws;body} =
 
   (* label map that associates instruction sequences to labels *)
   let lbl2cont_insts =
@@ -81,7 +82,7 @@ let f_body {Codegen.prms;body} =
       | Some l -> max (l + 1) v
     ) (List.length prms + 1) body
   in
-  {limits = (max_stack, max_locals); body}
+  {limits = (max_stack, max_locals); throws;body}
 
 let f_field = function
   | Codegen.Method(t, name, body, jsig) -> Method(t, name, f_body body, jsig)

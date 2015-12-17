@@ -136,3 +136,7 @@ Example 3:
     Constructor must have the same name as its enclosing class
 
 (hence the program is properly rejected by the compiler with an error message)
+
+TODO:
+
+- [ ] コンストラクタ複数定義時エラーチェック

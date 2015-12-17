@@ -63,6 +63,7 @@ type local = t * id * exp
 type body =
     { prms   : prm list;
       locals : local list;
+      throws : string list;
       stms   : stm list;
       return : rstm; }
 

@@ -54,9 +54,30 @@ test:
 
 test0:
 	cd test_joos0; ../joos0 *.java
+	cd test_joos0; jasc *.j
+	cd test_joos0; java test_arithmeticoperations
+	cd test_joos0; java test_boolean
+	cd test_joos0; java test_booleanliterals
+	cd test_joos0; java test_comparisonoperations
+	cd test_joos0; java test_eagerbooleanoperations
+	cd test_joos0; java test_fieldinitializers
+	cd test_joos0; java test_if
+	cd test_joos0; java test_implicitstringconcatenation
+	cd test_joos0; java test_implicitsupercall
+	cd test_joos0; java test_int
+	cd test_joos0; java test_intliterals
+	cd test_joos0; java test_nullliteral
+	cd test_joos0; java test_protectedfields
+	cd test_joos0; java test_publicclasses
+	cd test_joos0; java test_publicconstructors
+	cd test_joos0; java test_publicmethods
+	cd test_joos0; java test_stringliterals
+	cd test_joos0; java test_while
 
 test1:
 	cd test_joos1; ../joos0 *.java
+
+
 test2:
 	cd test_joos2; ../joos0 *.java
 test3:

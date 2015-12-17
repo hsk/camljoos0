@@ -21,8 +21,8 @@
   let make_exp e_pos exp = { e_pos; exp }
 
 
-  let make_body (prms,locals,stms,return) =
-    { prms; locals; stms; return }
+  let make_body (prms,throws,locals,stms,return) =
+    { prms; throws; locals; stms; return }
 
   let make_method (texp, name, body) = Method(texp,name,body)
   let make_constructor (id, body) = Constructor(id, body)
@@ -173,7 +173,7 @@ goal :
         |  PUBLIC t_or_void IDENTIFIER method_params throws_clause method_body
            { let id = make_id $startpos $3 in 
              let (lvars,stms,retstm) = $6 in
-             let body = make_body ($4,lvars,stms,retstm) in
+             let body = make_body ($4,$5,lvars,stms,retstm) in
              make_method ($2,id,body) }
 
         | PUBLIC STATIC VOID MAIN main_method_params throws_clause
@@ -181,7 +181,7 @@ goal :
          { let new_exp = make_exp $startpos (New ($9,[])) in (*FIXME: pos?*)
            let new_stm = make_stm $startpos (Exp new_exp) in (*FIXME: pos?*)
            let new_retstm = make_retstm $startpos VoidReturn in(*FIXME: pos?*)
-           let body = make_body ([],[],[new_stm],new_retstm) in
+           let body = make_body ([],$6,[],[new_stm],new_retstm) in
            Main(body) }
         t_or_void :
           |  VOID { make_t $startpos TVoid }
@@ -208,7 +208,8 @@ goal :
           |  L_PAREN STRING L_BRACKET R_BRACKET IDENTIFIER R_PAREN { make_id $startpos $5 }
 
       throws_clause :
-        |  THROWS EXCEPTION { () }
+        | { [] }
+        |  THROWS EXCEPTION { ["Exception"] }
 
       (* ********** Constructor declarations ********** *)
 
@@ -217,7 +218,7 @@ goal :
            { let (id,prms) = $2 in 
              let (lvars,stms) = $4 in
              let retstm       = make_retstm $startpos VoidReturn in
-             let body = make_body (prms,lvars,stms,retstm) in
+             let body = make_body (prms,$3,lvars,stms,retstm) in
              make_constructor (id,body) }
 
         constructor_declarator  :

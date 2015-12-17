@@ -7,7 +7,10 @@ open Printf
 let make_sig mname fullsig =
   mname ^ (Str.string_after fullsig (String.index fullsig '('))
 
-let f_body ch {limits=(stack, locals); body} = 
+let f_body ch {limits=(stack, locals); throws; body} = 
+  List.iter(fun throw ->
+    fprintf ch "  .throws java/lang/%s\n" throw;
+  ) throws;
   fprintf ch "  .limit stack %d\n" stack;
   fprintf ch "  .limit locals %d\n" locals;
   List.iter (fun inst -> fprintf ch "%s\n" (Inst.to_asm inst)) body
@@ -16,21 +19,18 @@ let f_field ch = function
   | Constructor (_, body, jsig) ->
     fprintf ch "\n";
     fprintf ch ".method public %s\n" (make_sig "<init>" jsig);
-    fprintf ch "  .throws java/lang/Exception\n";
     f_body ch body;
     fprintf ch ".end method\n"
 
   | Method(_, {Ast.id}, body, jsig) ->
     fprintf ch "\n";
     fprintf ch ".method public %s\n" (make_sig id jsig);
-    fprintf ch "  .throws java/lang/Exception\n";
     f_body ch body;
     fprintf ch ".end method\n"
 
   | Main body ->
     fprintf ch "\n";
     fprintf ch ".method public static main([Ljava/lang/String;)V\n";
-    fprintf ch "  .throws java/lang/Exception\n";
     f_body ch body;
     fprintf ch ".end method\n"
 

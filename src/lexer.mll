@@ -201,8 +201,8 @@
     | MINUS -> "-"
     | STAR -> "*"
     | DIV -> "/"
-    | AND -> "&"
-    | OR -> "|"
+    | AND -> "&&"
+    | OR -> "||"
     | XOR -> "^"
     | MOD -> "%"
       
@@ -291,6 +291,8 @@ rule token = parse
   | '-'             { MINUS }
   | '*'             { STAR }
   | '/'             { DIV }
+  | "&&"            { AND }
+  | "||"            { OR }
   | '&'             { AND }
   | '|'             { OR }
   | '^'             { XOR }
